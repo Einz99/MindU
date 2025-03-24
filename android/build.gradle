@@ -1,5 +1,6 @@
 buildscript {
     ext {
+        namespace = "com.mindu"
         buildToolsVersion = "35.0.0"
         minSdkVersion = 24
         compileSdkVersion = 35
