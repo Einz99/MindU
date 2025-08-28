@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {  } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from './screens/startingScreens/LoginScreen';
@@ -9,6 +9,7 @@ import BottomTabs from './Components/BottomTab';
 import ForgotScreen from './screens/startingScreens/ForgotScreen';
 import OnboardingScreen from './screens/startingScreens/OnBoardingScreen';
 import DebugScreen from './screens/Debugger';
+import 'text-encoding';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

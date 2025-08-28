@@ -52,6 +52,7 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         fontStyle: 'italic',
         color: '#333',
+        width: '90%',
     },
     button: {
         position: 'absolute',

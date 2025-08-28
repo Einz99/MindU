@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Alert, TextInput, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Image, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { API, RootAPI } from '../apiConfigs';
 import * as ImagePicker from 'react-native-image-picker';
-import RNPickerSelect from 'react-native-picker-select';
 import apiClient from '../APIClient';
-import { io } from 'socket.io-client';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import DrawerComponent from '../Components/DrawerComponent';
+import axios from 'axios';
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [isModalVisible, setModalVisible] = useState(false);
   const [tempProfile, setTempProfile] = useState({
     name: '',
     section: '',
@@ -24,32 +24,91 @@ export default function SettingsScreen() {
   const [Name, setName] = useState('');
   const [section, setSection] = useState('');
   const [adviser, setAdviser] = useState('');
-  const [age, setAge] = useState(0);
-  const [gender, setGender] = useState<string | null>(null);
   const [profilePic, setProfilePic] = useState<string | null>(null);
+  const [notConfirmPic, setNotConfirmPic] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [picChanged, setPicChanged] = useState(false);
+
+  const [logoutModal, setLogoutModal] = useState(false);
+  const [pictureChangeModal, setPictureChangeModal] = useState(false);
+  const [emailChange, setEmailChange] = useState(false);
+  const [emailTemp, setEmailTemp] = useState('');
+  const [code, setCode] = useState(['', '', '', '']);
+  const inputRefs = useRef<Array<TextInput | null>>([]);
+  const [passwordChange, setPasswordChange] = useState(false);
+  const [truePassword, setTruePassword] = useState('');
+  const [oldPass, setOldPass] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isEmailValid, setIsEmailValid] = useState(true);
+  const [oldPassVisibility, setOldPassVisibility] = useState(false);
+  const [newPassVisibility, setNewPassVisibility] = useState(false);
+  const [confPassVisibility, setConfPassVisibility] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
+  const [message, setMessage] = useState('');
+  const [, setNothing] = useState(false);
+  const [codeModal, setCodeModal] = useState(false);
+
+  const [messageError, setMessageError] = useState('');
+  const [isSuccessful, setIsSuccessful] = useState(false);
+  const [alertModal, setAlertModal] = useState(false);
+
+  const refreshUserData = async () => {
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+      const response = await apiClient.get(`${API}/user`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data.user) {
+        setID(response.data.user.id);
+        setName(response.data.user.firstName + ' ' + response.data.user.lastName);
+        setSection(response.data.user.section);
+        setAdviser(response.data.user.adviser);
+        setProfilePic(response.data.user.profilePic);
+        setNotConfirmPic(response.data.user.profilePic);
+        setEmail(response.data.user.email);
+        setEmailTemp(response.data.user.email);
+        setTruePassword(response.data.user.password);
+      }
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const token = await AsyncStorage.getItem('userToken');
-            if (!token) {
-              Alert.alert('Error', 'User token not found. Please log in again.');
-              navigation.navigate('Login');
-              return;
-            }
-            const response = await apiClient.get(`${API}/user`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
+        if (!token) {
+          setIsSuccessful(false);
+          setMessageError('Email and Password are required.');
+          setAlertModal(true);
+          setTimeout(() => {
+            navigation.navigate('Login');
+          }, 1000);
+          return;
+        }
+        const response = await apiClient.get(`${API}/user`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (response.data.user) {
           setID(response.data.user.id);
           setName(response.data.user.firstName + ' ' + response.data.user.lastName);
           setSection(response.data.user.section);
           setAdviser(response.data.user.adviser);
-          setAge(response.data.user.age);
-          setGender(response.data.user.gender);
           setProfilePic(response.data.user.profilePic);
+          setNotConfirmPic(response.data.user.profilePic);
+          setEmail(response.data.user.email);
+          setEmailTemp(response.data.user.email);
+          setTruePassword(response.data.user.password);
+          // Password is not typically fetched from the server
+          setPassword('*****************');
         } else {
-          Alert.alert('Error', 'Failed to fetch user details.');
+          setIsSuccessful(false);
+          setMessageError('Server Error: Unable to connect. Please try again.');
+          setAlertModal(true);
         }
       }
       catch (error: any) {
@@ -58,18 +117,21 @@ export default function SettingsScreen() {
         // Handle session expiration
         if (error.logout) {
           (async () => {
-            Alert.alert('Session Expired', 'Please log in again.');
+            setIsSuccessful(false);
+            setMessageError('Session Expired. Please log in again');
+            setAlertModal(true);
             await AsyncStorage.clear();
             navigation.navigate('Login');
           })();
         } else {
-          Alert.alert('Error', error.response?.data?.message || 'An error occurred.');
+          setIsSuccessful(false);
+          setMessageError('Server Error: Unable to connect. Please try again.');
+          setAlertModal(true);
         }
       }
     };
     fetchUserData();
-
-  } , [navigation]);
+  }, [navigation]);
 
   const handleLogout = async () => {
     // Remove the stored token
@@ -84,243 +146,744 @@ export default function SettingsScreen() {
     });
   };
 
-  const socket = io(RootAPI, { transports: ['websocket'], reconnectionAttempts: 5 });
+  const handleChangeProfilePic = () => {
+    const options: ImagePicker.ImageLibraryOptions = {
+      mediaType: 'photo',
+      quality: 1,
+      includeBase64: false,
+    };
 
-  const handleSaveProfile = async () => {
-    const token = await AsyncStorage.getItem('userToken');
+    ImagePicker.launchImageLibrary(options, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.errorCode) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        setIsSuccessful(false);
+        setMessageError('Failed to pick image.');
+        setAlertModal(true);
+      } else if (response.assets && response.assets[0].uri) {
+        setPicChanged(true);
+        setProfilePic(response.assets[0].uri);
+        setTempProfile({
+          ...tempProfile,
+          profilePic: response.assets[0].uri,
+        });
+        // Auto-save profile after selection
+      }
+    });
+    setPictureChangeModal(true);
+  };
 
-    const formData = new FormData();
-    formData.append('age', tempProfile.age.toString());
-    formData.append('gender', tempProfile.gender);
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    setIsEmailValid(emailRegex.test(text));
+  };
 
-    if (profilePic) {
-      const fileName = profilePic.split('/').pop();
-      const fileType = fileName ? fileName.split('.').pop() : '';
+  const renderField = (label: string, value: string, editable: boolean, setModal: Function) => {
+    return (
+      <View style={styles.fieldContainer}>
+        <Text style={styles.fieldLabel}>{label}</Text>
+        <View style={styles.inputContainer}>
+          <Text style={styles.input}>
+            {value}
+          </Text>
+          {editable && <Ionicons name="create-outline" size={15} style={styles.editIcon} onPress={() => setModal(true)}/>}
+        </View>
+      </View>
+    );
+  };
+
+  const handlePasswordConfirm = async () => {
+    if (truePassword !== oldPass) {
+      setMessage('Incorrect Old Password. Please try again.');
+      setTruePassword('');
+      setTempPassword('');
+      setConfirmPassword('');
+      return;
+    } else if (tempPassword !== confirmPassword) {
+      setMessage('New Password and Confirm Password do not match.');
+      setTempPassword('');
+      setConfirmPassword('');
+      return;
+    } else {
+      try {
+        const token = await AsyncStorage.getItem('userToken');
+        const response = await apiClient.put(`${API}/update-password`,
+          { password: tempPassword, firstLogin: false },
+          { headers: { Authorization: `Bearer ${token}` }}
+        );
+
+        if (response.data.success) {
+          setPasswordChange(false);
+          setTempPassword('');
+          setConfirmPassword('');
+          setOldPass('');
+          setPassword('*****************');
+          refreshUserData();
+          setIsSuccessful(true);
+          setMessageError('Password updated successfully.');
+          setAlertModal(true);
+        }
+      } catch (error: any) {
+        setIsSuccessful(false);
+        setMessageError('Failed to update password. Please your check connection before trying again');
+        setAlertModal(true);
+      }
+    }
+  };
+
+  const handleProfileConfirm = async () => {
+    try {
+      if (!picChanged) {
+        setPictureChangeModal(false);
+        return;
+      }
+
+      const token = await AsyncStorage.getItem('userToken');
+
+      // Create form data for image upload
+      const formData = new FormData();
+      let filename = profilePic && profilePic.split('/').pop();
+      let match = filename && /\.(\w+)$/.exec(filename);
+      let type = match ? `image/${match[1]}` : 'image';
 
       formData.append('profilePic', {
         uri: profilePic,
-        name: fileName,
-        type: `image/${fileType}`,
-      });
-    }
-
-    try {
-      const response = await fetch(`${API}/update-profile`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-        body: formData,
+        name: filename,
+        type,
       });
 
-      const data = await response.json();
-      if (data.success) {
-        setProfilePic(data.profilePicPath);
-        setModalVisible(false);
-
-        // Emit event via WebSocket when the profile is updated
-        socket.emit('profileUpdated', { profilePic: data.profilePicPath, name: Name });
-
-      } else {
-        Alert.alert('Error', data.message);
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile');
-    }
-    setModalVisible(false);
-  };
-
-  const pickImage = () => {
-    ImagePicker.launchImageLibrary({ mediaType: 'photo' }, (response) => {
-      if (response.assets && response.assets.length > 0) {
-        if (response.assets[0].uri) {
-          setProfilePic(response.assets[0].uri); // Save image URI
+      const response = await apiClient.put(`${API}/update-profile-pic`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
         }
+      );
+
+      if (response.data.success) {
+        setPictureChangeModal(false);
+        setNotConfirmPic(response.data.profilePicPath);
+        setPicChanged(false);
+        refreshUserData();
+        setIsSuccessful(true);
+        setMessageError('Profile picture updated successfully.');
+        setAlertModal(true);
       }
-    });
+    } catch (error: any) {
+      setIsSuccessful(false);
+      setMessageError('Failed to update profile picture. Please check your connection before trying again.');
+      setAlertModal(true);
+      setProfilePic(notConfirmPic);
+      setPicChanged(false);
+    }
   };
 
-  const openProfileModal = () => {
-    setTempProfile({
-      name: Name,
-      section,
-      adviser,
-      age,
-      gender: gender ?? '',
-      profilePic: profilePic ?? '',
-    });
-    setModalVisible(true);
+  const isPasswordValid = (passwordinput: string): boolean => {
+    setMessage('password must be atleast 10 characters, have uppercase, lowercase, number and special character');
+    const minLength = /.{10,}/;
+    const upper = /[A-Z]/;
+    const lower = /[a-z]/;
+    const number = /[0-9]/;
+    const special = /[!@#$%^&*(),.?":{}|<>]/;
+
+    return (
+      minLength.test(passwordinput) &&
+      upper.test(passwordinput) &&
+      lower.test(passwordinput) &&
+      number.test(passwordinput) &&
+      special.test(passwordinput)
+    );
   };
 
-  const handleCancel = () => {
-    setName(tempProfile.name);
-    setSection(tempProfile.section);
-    setAdviser(tempProfile.adviser);
-    setAge(tempProfile.age);
-    setGender(tempProfile.gender);
-    setProfilePic(tempProfile.profilePic);
-    setModalVisible(false);
+  const handleSendCode = async () => {
+    try {
+      const respond = await axios.post(`${API}/send-code`, {
+        email: email,
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (respond.status === 200) {
+        setEmailChange(false);
+        setCodeModal(true);
+      }
+    } catch (err) {
+    }
+  };
+
+  const handleKeyPress = (
+    e: NativeSyntheticEvent<TextInputKeyPressEventData>,
+    index: number
+  ) => {
+    if (e.nativeEvent.key === 'Backspace' && code[index] === '' && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleChange = (text: string, index: number) => {
+    const newCode = [...code];
+    newCode[index] = text;
+    setCode(newCode);
+
+    if (text && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleSubmit = async () => {
+    const joinedCode = code.join('');
+    if (joinedCode.length === 4) {
+      try {
+        const response = await axios.post(`${API}/verify-code`, {
+          email: email,
+          code: joinedCode,
+          }, {
+          headers: { 'Content-Type': 'application/json' },
+          });
+
+        if(response.status === 200) {
+          try {
+            const token = await AsyncStorage.getItem('userToken');
+            const responded = await apiClient.put(`${API}/update-email`,
+              { email },
+              { headers: { Authorization: `Bearer ${token}` }}
+            );
+
+            if (responded.data.success) {
+              setEmailChange(false);
+              setEmailTemp(email);
+              setIsSuccessful(true);
+              setMessageError('Email updated successfully.');
+              setAlertModal(true);
+              refreshUserData();
+            }
+          } catch (error : any) {
+            setIsSuccessful(false);
+            setMessageError('Failed to update email. Please check your internet before trying again.');
+            setAlertModal(true);
+            setEmail(emailTemp);
+          }
+        }
+      } catch (error) {
+      }
+    }
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Settings</Text>
-      <TouchableOpacity style={styles.button} onPress={() => openProfileModal()}>
-        <Text style={styles.buttonText}>profile</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={handleLogout}>
-        <Text style={styles.buttonText}>Logout</Text>
-      </TouchableOpacity>
+      <DrawerComponent Initial={'Profile'} />
+      <View style={styles.titleBox}>
+          <Text style={styles.title}>
+              Profile Settings
+          </Text>
+      </View>
+      <View style={styles.imageHolder}>
+        <Image
+        source={profilePic ? picChanged ? { uri: profilePic } : { uri: `${RootAPI}${profilePic}` } : require('../assets/images/default_profile.png')}
+        style={styles.Image}
+        />
+        <TouchableOpacity onPress={handleChangeProfilePic}>
+          <Ionicons name="camera" size={30} style={styles.imageIcon} />
+        </TouchableOpacity>
+      </View>
+      <View>
+        <Text style={styles.name}>{Name}</Text>
+        <Text style={styles.mood}>😄 Happy</Text>
+      </View>
+      <View style={styles.inputFields}>
+        {renderField('Email', email, true, setEmailChange)}
+        {renderField('Section', section, false, setNothing)}
+        {renderField('Adviser', adviser, false, setNothing)}
+        {renderField('Password', password, true, setPasswordChange)}
+        <TouchableOpacity style={styles.logout} onPress={() => {setLogoutModal(true); setProfilePic(notConfirmPic);}}>
+          <Ionicons name="log-out-outline" size={30} style={styles.logoutIcon}/>
+          <Text style={styles.logoutText}>LOG OUT</Text>
+        </TouchableOpacity>
+      </View>
 
-      {/* Profile Modal */}
+      {/* Logout Modal */}
       <Modal
-        animationType="slide"
-        transparent={false}
-        visible={isModalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        visible={logoutModal}
+        animationType="fade"
+        transparent
       >
-        <View style={styles.profileModal}>
-          <Text style={styles.title}>Profile Settings</Text>
-          <TouchableOpacity style={styles.changeImage} onPress={pickImage}>
-            <Image
-              source={profilePic ? { uri: profilePic } : require('../assets/images/default-profile.png')}
-              style={styles.image}
-            />
-            <Text style={styles.buttonText}>Change Profile</Text>
-          </TouchableOpacity>
-          <View style={styles.fields}>
-            <Text>Name:      </Text>
-            <Text style={styles.input}>{Name}</Text>
-          </View>
-          <View style={styles.fields}>
-            <Text>Section:   </Text>
-            <Text style={styles.input}>{section}</Text>
-          </View>
-          <View style={styles.fields}>
-            <Text>Adviser:   </Text>
-            <Text style={styles.input}>{adviser}</Text>
-          </View>
-          <View style={styles.fields}>
-            <Text>Gender:    </Text>
-            <View style={styles.picker}>
-            <RNPickerSelect
-              placeholder={{ label: 'Select Gender', value: null }}
-              onValueChange={(value) => setGender(value)}
-              items={[
-                { label: 'Male', value: 'M' },
-                { label: 'Female', value: 'F' },
-                { label: 'Other', value: 'O' },
-              ]}
-              value={gender}
-              style={{
-                inputIOS: { color: 'black' },
-                inputAndroid: { color: 'black' },
-              }}
-            />
+        <View style={styles.overlay}>
+          <View style={styles.LogoutModal}>
+            <View style={styles.LogoutHeader}>
+              <Text style={styles.LogoutTitleStyled}>Log out</Text>
+              <TouchableOpacity onPress={() => setLogoutModal(false)}>
+                <Ionicons name="close" size={22} color="#333" />
+              </TouchableOpacity>
             </View>
-          </View>
-          <View style={styles.fields}>
-            <Text>Age:          </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Age"
-              keyboardType="number-pad"
-              value={age ? age.toString() : ''}
-              onChangeText={(text) => {
-                const numericValue = parseInt(text, 10);
-                if (!isNaN(numericValue)) {
-                  setAge(numericValue);
-                } else {
-                  setAge(0);
-                }
-              }}
-            />
-          </View>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity onPress={() => handleCancel()}>
-              <Text style={styles.cancel}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleSaveProfile()}>
-              <Text style={styles.save}>Save</Text>
-            </TouchableOpacity>
+            <View style={styles.padding}>
+              <Text style={styles.LogoutConfirmation}>Are you sure you want to log out the accout?</Text>
+            </View>
+            <View style={styles.LogoutActions}>
+              <TouchableOpacity onPress={() => setLogoutModal(false)}>
+                <Text style={styles.backText}>BACK</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.sendBtn}
+                onPress={handleLogout}
+              >
+                <Text style={styles.LogoutButtonText}>Log out</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
+
+      {/* Picture Modal */}
+      <Modal
+        visible={pictureChangeModal}
+        animationType="fade"
+        transparent
+      >
+        <View style={styles.overlay}>
+          <View style={styles.LogoutModal}>
+            <View style={[styles.LogoutHeader, styles.BGGreen]}>
+              <Text style={styles.LogoutTitleStyled}>Change Profile</Text>
+              <TouchableOpacity onPress={() => {setPictureChangeModal(false); setProfilePic(notConfirmPic); setPicChanged(false);}}>
+                <Ionicons name="close" size={22} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.padding}>
+              <Text style={styles.LogoutConfirmation}>Are you sure you want to change profile?</Text>
+            </View>
+            <View style={styles.LogoutActions}>
+              <TouchableOpacity onPress={() => {setPictureChangeModal(false); setProfilePic(notConfirmPic); setPicChanged(false);}}>
+                <Text style={styles.backText}>BACK</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sendBtn, styles.BGGreen]}
+                onPress={handleProfileConfirm}
+              >
+                <Text style={styles.LogoutButtonText}>Change Profile</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Email Modal */}
+      <Modal
+        visible={emailChange}
+        animationType="fade"
+        transparent
+        onRequestClose={() => {setEmailChange(false); setEmail(emailTemp);}}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.LogoutModal}>
+            <View style={[styles.LogoutHeader, styles.BGGreen]}>
+              <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Change Email</Text>
+              <TouchableOpacity onPress={() => {setEmailChange(false); setEmail(emailTemp);}}>
+                <Ionicons name="close" size={22} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.padding}>
+              <Text style={styles.LogoutConfirmation}>Are you sure you want to email?</Text>
+            </View>
+            <View>
+            <View style={[styles.fieldContainer, styles.paddingField]}>
+              <Text style={styles.fieldLabel}>Email</Text>
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={[styles.input, !isEmailValid && styles.incorrect]}
+                  value={email}
+                  onChangeText={handleEmailChange}
+                />
+              </View>
+            </View>
+            </View>
+            <View style={styles.LogoutActions}>
+              <TouchableOpacity onPress={() => {setEmailChange(false);}}>
+                <Text style={styles.backText}>BACK</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sendBtn, styles.BGGreen]}
+                disabled={!email || !isEmailValid}
+                onPress={handleSendCode}
+              >
+                <Text style={styles.LogoutButtonText}>Send Code</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* code modal */}
+        <Modal
+          visible={codeModal}
+          animationType="fade"
+          transparent
+          onRequestClose={() => {setCodeModal(false); setEmail(emailTemp);}}
+          >
+          <View style={styles.overlay}>
+            <View style={styles.LogoutModal}>
+              <View style={[styles.LogoutHeader, styles.BGGreen]}>
+                <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Enter Verification Code</Text>
+                <TouchableOpacity onPress={() => {setCodeModal(false); setEmail(emailTemp);}}>
+                  <Ionicons name="close" size={22} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.padding}>
+                <Text style={styles.LogoutConfirmation}>We’ve sent a code on your new email account enter code to proceed</Text>
+              </View>
+              <View style={styles.codeInputContainer}>
+                {code.map((digit, index) => (
+                  <TextInput
+                    key={index}
+                    ref={(ref) => (inputRefs.current[index] = ref)}
+                    style={styles.codeInput}
+                    keyboardType="number-pad"
+                    maxLength={1}
+                    value={digit}
+                    onChangeText={(text) => handleChange(text, index)}
+                    onKeyPress={(e) => handleKeyPress(e, index)}
+                  />
+                ))}
+              </View>
+
+              <View style={styles.LogoutActions}>
+                <TouchableOpacity onPress={() => setCodeModal(false)}>
+                  <Text style={styles.backText}>BACK</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  // eslint-disable-next-line react-native/no-inline-styles
+                  style={[styles.sendBtn, styles.BGGreen, { opacity: code.join('').length === 4 ? 1 : 0.5 }]}
+                  disabled={code.join('').length !== 4}
+                  onPress={handleSubmit}
+                >
+                  <Text style={styles.LogoutButtonText}>Submit Code</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+      {/* Password Modal */}
+      <Modal
+        visible={passwordChange}
+        animationType="fade"
+        transparent
+      >
+        <View style={styles.overlay}>
+          <View style={styles.LogoutModal}>
+            <View style={[styles.LogoutHeader, styles.BGGreen]}>
+              <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Change Password</Text>
+              <TouchableOpacity onPress={() => {setPasswordChange(false); setTempPassword(''); setConfirmPassword(''); setOldPass('');}}>
+                <Ionicons name="close" size={22} color="#333" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.padding}>
+              <Text style={styles.LogoutConfirmation}>Are you sure you want to Password?</Text>
+            </View>
+            <View>
+              <View style={[styles.fieldContainer, styles.paddingField]}>
+                <Text style={styles.fieldLabel}>Old Password</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={styles.input}
+                    onChangeText={(e) => {setOldPass(e); setPasswordError(!isPasswordValid(e));}}
+                    secureTextEntry={!oldPassVisibility}
+                  />
+                  <TouchableOpacity
+                    style={styles.visibilityIcon}
+                    onPress={() => setOldPassVisibility(!oldPassVisibility)}
+                  >
+                    <Ionicons name={oldPassVisibility ? 'eye-off' : 'eye'} size={20} color="gray" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={[styles.fieldContainer, styles.paddingField]}>
+                <Text style={styles.fieldLabel}>New Password</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.input]}
+                    value={tempPassword}
+                    onChangeText={(e) => {setTempPassword(e); setPasswordError(!isPasswordValid(e));}}
+                    secureTextEntry={!newPassVisibility}
+                  />
+                  <TouchableOpacity
+                    style={styles.visibilityIcon}
+                    onPress={() => setNewPassVisibility(!newPassVisibility)}
+                  >
+                    <Ionicons name={newPassVisibility ? 'eye-off' : 'eye'} size={20} color="gray" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={[styles.fieldContainer, styles.paddingField]}>
+                <Text style={styles.fieldLabel}>Confirm New Password</Text>
+                <View style={styles.inputContainer}>
+                  <TextInput
+                    style={[styles.input]}
+                    value={confirmPassword}
+                    onChangeText={(e) => {setConfirmPassword(e); setPasswordError(!isPasswordValid(e));}}
+                    secureTextEntry={!confPassVisibility}
+                  />
+                  <TouchableOpacity
+                    style={styles.visibilityIcon}
+                    onPress={() => setConfPassVisibility(!confPassVisibility)}
+                  >
+                    <Ionicons name={confPassVisibility ? 'eye-off' : 'eye'} size={20} color="gray" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              {passwordError && <Text style={styles.hint}>{message}</Text>}
+            </View>
+            <View style={styles.LogoutActions}>
+              <TouchableOpacity onPress={() => {setPasswordChange(false); setTempPassword(''); setConfirmPassword(''); setOldPass('');}}>
+                <Text style={styles.backText}>BACK</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sendBtn, styles.BGGreen]}
+                onPress={() => {
+                    handlePasswordConfirm();
+                }}
+              >
+                <Text style={styles.LogoutButtonText}>Change Password</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={alertModal} animationType="fade" transparent>
+          <View style={styles.overlay2}>
+            <View style={styles.forgotModal2}>
+              <View style={[styles.modalHeader2, !isSuccessful && styles.redHeader]}>
+                <Text style={styles.modalTitleStyled2}>{isSuccessful ? 'Successful' : 'Error'}</Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setAlertModal(false);
+                    setMessageError('');
+                    setIsSuccessful(false);
+                  }}>
+                  <Ionicons name="close" size={22} color="#333" />
+                </TouchableOpacity>
+              </View>
+              <Text style={[styles.instructions2, styles.marginB]}>{messageError}</Text>
+              <View style={styles.actions2}>
+                <TouchableOpacity
+                      style={[styles.sendBtn2, !isSuccessful && styles.redHeader]}
+                      onPress={() => {
+                        setAlertModal(false);
+                        setMessageError('');
+                        setIsSuccessful(false);
+                      }}
+                    >
+                      <Text style={styles.sendText2}>OK</Text>
+                    </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
     </View>
     );
   }
 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center' },
-  title: { fontSize: 24, marginBottom: 20, marginTop: 40, textAlign: 'center' },
-  button: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    minWidth: '100%',
-    borderBottomWidth: 1,
-    borderBottomColor: 'gray',
-    alignItems: 'center',  // Centers items horizontally
-    justifyContent: 'center', // Centers items vertically
-    flexDirection: 'column', // Stacks image and text vertically
+  titleBox: {
+      backgroundColor: '#b7e3cc',
+      paddingVertical: 5,
+      paddingHorizontal: 50,
+      borderRadius: 25,
+      marginTop: 10,
+      marginBottom: 30,
   },
-  fields: {
-    flexDirection: 'row', alignItems: 'center',
+  title: {
+      fontSize: 15,
+      letterSpacing: 2,
+      fontFamily: 'Poppins-ExtraBold',
+      color: 'black',
   },
-  changeImage: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    minWidth: '100%',
-    alignItems: 'center',  // Centers items horizontally
-    justifyContent: 'center', // Centers items vertically
-    flexDirection: 'column', // Stacks image and text vertically
+  Image: { width: '100%', height: '100%', borderRadius: 9999, borderColor: '#b7e3cc', borderWidth: 5 },
+  imageHolder: {width: '60%', height: '28.5%', borderRadius: 9999, position: 'relative', marginBottom: 25},
+  imageIcon: {backgroundColor: '#b7e3cc', color: 'white', width: 45, height: 45, padding: 7.5, borderRadius: 9999, position: 'absolute', bottom: -20, left: '40%'},
+  name: {fontFamily: 'Poppins-ExtraBold', fontSize: 25, textAlign: 'center', marginBottom: -5, color: '#317873'},
+  mood: {fontFamily: 'Lora-Bold', textAlign: 'center', color: 'black', marginBottom: 20},
+  inputFields: {width: '80%', flex: 1},
+  fieldContainer: {marginBottom: 15, position: 'relative'},
+  fieldLabel: {
+    color: '#317873',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: 12,
+    marginBottom: 3,
+    position: 'absolute',
+    top: -12,
+    left: 15,
+    zIndex: 20,
+    borderRadius: 20,
+    borderColor: '#b7e3cc',
+    borderWidth: 2,
+    paddingHorizontal: 10,
+    backgroundColor: 'white',
   },
-  buttonText: { color: '#000', fontSize: 16, textAlign: 'center' },
-  profileModal: {
-    flex: 1,
-    justifyContent: 'center',
-    backgroundColor: '#fff',
-    paddingHorizontal: 30,
-    width: '100%',
+  inputContainer: {
+    borderRadius: 10,
+    borderColor: '#b7e3cc',
+    borderWidth: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 10,
+    backgroundColor: 'white',
+    position: 'relative',
   },
-  modalButtons: {
+  input: {flex: 1, paddingVertical: 8, paddingHorizontal: 15, fontFamily: 'Poppins-Regular',color: '#333'},
+  editIcon: {color: '#5a9c7a', position: 'absolute', top: 2, right: 5},
+  logout: {flexDirection: 'row', width: '45%', backgroundColor: '#d9534f', paddingVertical: 5, paddingHorizontal: 20, borderRadius: 20, marginHorizontal: 'auto'},
+  logoutIcon: {color: 'white', marginLeft: -3, marginRight: 3},
+  logoutText: {color: 'white', textAlignVertical: 'center', fontFamily: 'Poppins-Medium', fontSize: 15},
+  overlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)'},
+  LogoutModal: {
+    width: '85%',
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+    backgroundColor: 'white',
+  },
+  LogoutHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    marginVertical: '10%',
+    alignItems: 'center',
+    backgroundColor: '#d9534f',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
   },
-  cancel: {
-    color: 'red',
-    fontSize: 16,
+  LogoutTitleStyled: {
+    fontSize: 18,
+    color: '#333',
+    fontFamily: 'Poppins-Bold',
   },
-  save: {
-    color: 'blue',
-    fontSize: 16,
+  padding: {width: '100%', margin: 'auto', paddingHorizontal: '25%', paddingVertical: 20},
+  LogoutConfirmation: {fontFamily: 'Lora-SemiBold', textAlign: 'center', color: 'black'},
+  LogoutActions: {
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginRight: 10,
+    marginBottom: 10,
   },
-  input: {
-    fontSize: 16,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 5,
-    color: 'black',
-    width: '80%',
+  backText: {
+    color: 'gray',
+    fontFamily: 'Poppins-ExtraBold',
   },
-  image: {
-    width: 200,
-    height: 200,
-    marginTop: 20,
-    borderRadius: 9999,
+  sendBtn: {
+    backgroundColor: '#d9534f',
+    paddingHorizontal: 20,
+    borderRadius: 30,
   },
-  picker: {
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: 'gray',
-    borderRadius: 5,
-    color: 'black',
-    width: '80%',
+  LogoutButtonText: {
+    color: 'white',
+    fontFamily: 'Poppins-ExtraBold',
+    shadowRadius: 3,
+    shadowOffset: {width: 1, height: 1},
+    shadowColor: 'gray',
+    fontSize: 15,
+  },
+  BGGreen: {backgroundColor: '#b7e3cc'},
+  blackText: {color: 'black'},
+  paddingField: {paddingHorizontal: 20},
+  incorrect: {color: 'red'},
+  visibilityIcon: {
+    position: 'absolute',
+    right: 10,
+    top: '30%',
+  },
+  hint: {color: '#ed5450', textAlign: 'left', paddingHorizontal: 20, fontFamily: 'Lora-Regular', marginBottom: 10, marginTop: -10},
+  wrongInput: {borderColor: 'red'},
+  codeInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 20,
+    paddingHorizontal: 40,
+  },
+  codeInput: {
+    width: 50,
+    height: 50,
+    borderWidth: 2,
+    borderColor: '#b7e3cc',
+    borderRadius: 8,
+    textAlign: 'center',
+    fontSize: 20,
+    backgroundColor: '#f9f9f9',
+    color: '#333',
+    fontFamily: 'Lora-Regular',
+  },
+  overlay2: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(49, 120, 115, 0.8)',
+  },
+  forgotModal2: {
+    width: '85%',
+    borderRadius: 15,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 5,
+    backgroundColor: 'white',
+  },
+  modalHeader2: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    backgroundColor: '#b7e3cc',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+  },
+  redHeader: {
+    backgroundColor: '#e3b7b7',
+  },
+  marginB: {
+    marginBottom: 10,
+  },
+  modalTitleStyled2: {
+    fontSize: 18,
+    color: '#333',
+    fontFamily: 'Poppins-Bold',
+  },
+  instructions2: {
+    fontFamily: 'Lora-Bold',
+    color: '#4a4a4a',
+    paddingHorizontal: 40,
+    textAlign: 'center',
+  },
+  actions2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 10,
+    justifyContent: 'flex-end',
+  },
+  sendBtn2: {
+    backgroundColor: '#b7e3cc',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  sendText2: {
+    color: 'white',
+    fontFamily: 'Poppins-ExtraBold',
+    shadowRadius: 3,
+    shadowOffset: {width: 1, height: 1},
+    shadowColor: 'gray',
+    fontSize: 15,
   },
 });

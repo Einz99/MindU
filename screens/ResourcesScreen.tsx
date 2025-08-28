@@ -70,7 +70,7 @@ export default function HomepageScreen() {
     <View style={styles.container}>
       <ScrollView style={styles.resourcesContainer}>
         <Text style={styles.resourcesTitle}>Resources</Text>
-        {loading ? (
+        {!loading ? (
           <Text>Loading resources...</Text>
         ) : (
           resources.map((resource) => (
