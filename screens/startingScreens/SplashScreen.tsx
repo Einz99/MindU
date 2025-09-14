@@ -6,6 +6,7 @@ import { RootStackParamList } from '../../types';
 import { jwtDecode } from 'jwt-decode';
 import axios from 'axios';
 import { API } from '../../apiConfigs';
+import apiClient from '../../APIClient';
 
 interface DecodedToken {
   firstLogin: boolean;
@@ -18,7 +19,7 @@ export default function SplashScreen() {
   useEffect(() => {
     const checkAppStatus = async () => {
       try {
-        // 🌟 Check if the app has launched before
+        // 🌟 First launch check
         const hasLaunched = await AsyncStorage.getItem('hasLaunched');
         console.log('📌 SplashScreen - hasLaunched:', hasLaunched);
 
@@ -31,8 +32,8 @@ export default function SplashScreen() {
           return;
         }
 
-        // ✅ Proceed with authentication check
-        const accessToken = await AsyncStorage.getItem('userToken');
+        // ✅ Authentication check
+        let accessToken = await AsyncStorage.getItem('userToken');
         const refreshToken = await AsyncStorage.getItem('refreshToken');
 
         if (accessToken) {
@@ -40,35 +41,59 @@ export default function SplashScreen() {
             const decoded: DecodedToken = jwtDecode(accessToken);
             const isExpired = decoded.exp * 1000 < Date.now();
 
-            if (isExpired) {
+            if (isExpired && refreshToken) {
               console.log('🔄 Access token expired, attempting refresh...');
-              if (refreshToken) {
-                try {
-                  const response = await axios.post(`${API}/auth/refresh`, { refreshToken });
-
-                  if (response.data?.accessToken) {
-                    await AsyncStorage.setItem('userToken', response.data.accessToken);
-                    console.log('✅ Token refreshed successfully!');
-                    navigation.reset({ index: 0, routes: [{ name: 'Homepage' }] });
-                  } else {
-                    throw new Error('Invalid refresh response');
-                  }
-                } catch (refreshError) {
-                  console.error('❌ Refresh token failed:', refreshError);
-                  await AsyncStorage.removeItem('userToken');
-                  await AsyncStorage.removeItem('refreshToken');
-                  navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+              const refreshRes = await axios.post(`${API}/auth/refresh`, { refreshToken });
+              if (refreshRes.data?.accessToken) {
+                accessToken = refreshRes.data.accessToken;
+                if (accessToken) {
+                  await AsyncStorage.setItem('userToken', accessToken);
+                  console.log('✅ Token refreshed successfully!');
                 }
               } else {
-                console.log('❌ No refresh token, redirecting to Login...');
-                await AsyncStorage.removeItem('userToken');
-                navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+                throw new Error('Invalid refresh response');
               }
-            } else {
-              navigation.reset({ index: 0, routes: [{ name: 'Homepage' }] });
+            } else if (isExpired) {
+              console.log('❌ No refresh token or expired, redirecting to Login...');
+              await AsyncStorage.multiRemove(['userToken', 'refreshToken']);
+              navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+              return;
             }
-          } catch (error) {
-            console.error('Error decoding token:', error);
+
+            // -------------------------
+            // Fetch student info
+            // -------------------------
+            let student_id: number | null = null;
+            try {
+              const userRes = await apiClient.get(`${API}/user`, {
+                headers: { Authorization: `Bearer ${accessToken}` },
+              });
+
+              if (userRes.data?.user) {
+                student_id = userRes.data.user.id;
+              }
+            } catch (err) {
+              console.error('❌ Failed to fetch user info:', err);
+            }
+
+            // -------------------------
+            // Insert daily login
+            // -------------------------
+            if (student_id) {
+              try {
+                await axios.post(`${API}/student-login-percentages/insert`, { student_id });
+                console.log('✅ Daily login recorded');
+              } catch (insertErr) {
+                console.error('❌ Failed to insert daily login:', insertErr);
+              }
+            }
+
+            // -------------------------
+            // Navigate to Homepage
+            // -------------------------
+            navigation.reset({ index: 0, routes: [{ name: 'Homepage' }] });
+          } catch (err) {
+            console.error('❌ Token decoding error:', err);
             await AsyncStorage.removeItem('userToken');
             navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
           }
@@ -76,7 +101,7 @@ export default function SplashScreen() {
           navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
         }
       } catch (error) {
-        console.error('Error in splash logic:', error);
+        console.error('❌ SplashScreen error:', error);
         navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
       }
     };

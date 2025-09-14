@@ -249,7 +249,15 @@ export default function CalendarScreen() {
                           <Text style={styles.navButtonText}>◀</Text>
                         </TouchableOpacity>
                         <View style={styles.monthContainer}>
-                          <Text style={styles.monthText}>{months[currentMonth]}</Text>
+                          <Text
+                            style={[
+                              styles.monthText,
+                              // eslint-disable-next-line react-native/no-inline-styles
+                              { fontSize: months[currentMonth].length > 7 ? 26 : 28},
+                            ]}
+                          >
+                            {months[currentMonth]}
+                          </Text>
                         </View>
                         <TouchableOpacity onPress={() => navigateMonth('next')} style={styles.navButton}>
                           <Text style={styles.navButtonText}>▶</Text>
@@ -455,7 +463,6 @@ const styles = StyleSheet.create({
       width: '70%',
     },
     monthText: {
-      fontSize: 28,
       color: 'black',
       fontFamily: 'Poppins-Bold',
       textAlign: 'center',

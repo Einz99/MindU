@@ -1,0 +1,129 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "assets/fonts/Lora-Bold.ttf",
+      "sha1": "2e444def8d9c585fa95eb135a66e55ec0824304b"
+    },
+    {
+      "path": "assets/fonts/Lora-BoldItalic.ttf",
+      "sha1": "32576bcedb2f1b69a83d3a87fdbc4a256d46552a"
+    },
+    {
+      "path": "assets/fonts/Lora-Italic.ttf",
+      "sha1": "a07ad6a0ec38c123e82e14654d6142b6118b9908"
+    },
+    {
+      "path": "assets/fonts/Lora-Medium.ttf",
+      "sha1": "5fb0d23ffdab38a56e61b9126ecaabb8cd384f41"
+    },
+    {
+      "path": "assets/fonts/Lora-MediumItalic.ttf",
+      "sha1": "92695596aa5830e58c6317a2b6387a1ca444990e"
+    },
+    {
+      "path": "assets/fonts/Lora-Regular.ttf",
+      "sha1": "ac19a510bf9608477c9c566aaea491ecb25d4b20"
+    },
+    {
+      "path": "assets/fonts/Lora-SemiBold.ttf",
+      "sha1": "642232c25f14075f6d62956702a1eea5e396f29e"
+    },
+    {
+      "path": "assets/fonts/Lora-SemiBoldItalic.ttf",
+      "sha1": "c58cc7e51ad5e2f4a8f7d56446cf360f12b44369"
+    },
+    {
+      "path": "assets/fonts/Poppins-Black.ttf",
+      "sha1": "645e04c53c6b5b35bce654a811ebce16af8aa721"
+    },
+    {
+      "path": "assets/fonts/Poppins-BlackItalic.ttf",
+      "sha1": "be4ef2aac7775a4b0179c0ecfce6cea8f7783f63"
+    },
+    {
+      "path": "assets/fonts/Poppins-Bold.ttf",
+      "sha1": "875cf0cecd647bcf22e79d633d868c1b1ec98dfa"
+    },
+    {
+      "path": "assets/fonts/Poppins-BoldItalic.ttf",
+      "sha1": "6de8952ca08d27ee77f57347d2cef4b4e26aa78f"
+    },
+    {
+      "path": "assets/fonts/Poppins-ExtraBold.ttf",
+      "sha1": "4b5c0750f073abd576413a0898d3b95adaf199c8"
+    },
+    {
+      "path": "assets/fonts/Poppins-ExtraBoldItalic.ttf",
+      "sha1": "94d3ee3acdbd00e37a715a25f2b5237666b5b8a3"
+    },
+    {
+      "path": "assets/fonts/Poppins-ExtraLight.ttf",
+      "sha1": "85af6582a7e6155917c605f9d3fed68c02b23b06"
+    },
+    {
+      "path": "assets/fonts/Poppins-ExtraLightItalic.ttf",
+      "sha1": "6fa0418f91032680d2d8fe4843009f2c80faa61d"
+    },
+    {
+      "path": "assets/fonts/Poppins-Italic.ttf",
+      "sha1": "e2bfcd56016c3c915221ef1c5fc1a17b0776eb91"
+    },
+    {
+      "path": "assets/fonts/Poppins-Light.ttf",
+      "sha1": "e247a92158e112f8bf7b638c8d95381d66b00dbb"
+    },
+    {
+      "path": "assets/fonts/Poppins-LightItalic.ttf",
+      "sha1": "f76102b361e705751a83b7b22fe954daf1f27dd4"
+    },
+    {
+      "path": "assets/fonts/Poppins-Medium.ttf",
+      "sha1": "283f21b44efbdbf276ba802be2d949a36bbc4233"
+    },
+    {
+      "path": "assets/fonts/Poppins-MediumItalic.ttf",
+      "sha1": "b592c62fdf88c40cfd0f031bba6423b1d4430472"
+    },
+    {
+      "path": "assets/fonts/Poppins-Regular.ttf",
+      "sha1": "fdd3002e7d814ee47c1c1b8487c72c6bbb3a2d00"
+    },
+    {
+      "path": "assets/fonts/Poppins-SemiBold.ttf",
+      "sha1": "8a4ace9392d06bcb7f8ea2f5169b07e4c383a90d"
+    },
+    {
+      "path": "assets/fonts/Poppins-SemiBoldItalic.ttf",
+      "sha1": "0c8bed0a5942b2388d36b11c115685d9f01700b0"
+    },
+    {
+      "path": "assets/fonts/Poppins-Thin.ttf",
+      "sha1": "09ba4dcd5509c8085bf88c665dcc51cbdfced27b"
+    },
+    {
+      "path": "assets/fonts/Poppins-ThinItalic.ttf",
+      "sha1": "fb8fccca21550e71135f92bbaf8a2e8a12c90465"
+    },
+    {
+      "path": "assets/fonts/Quicksand-Bold.ttf",
+      "sha1": "111e880f4de54ccf0a7fd14f38999b9c066e46bb"
+    },
+    {
+      "path": "assets/fonts/Quicksand-Light.ttf",
+      "sha1": "4d3b72ff1544d92ca9a435d7e34d21eda322dd76"
+    },
+    {
+      "path": "assets/fonts/Quicksand-Medium.ttf",
+      "sha1": "04b8198132a4a092b10d0631500268d6a2a0f889"
+    },
+    {
+      "path": "assets/fonts/Quicksand-Regular.ttf",
+      "sha1": "61504eaec812663121918199aac7d960229bd306"
+    },
+    {
+      "path": "assets/fonts/Quicksand-SemiBold.ttf",
+      "sha1": "339f8d3e09ad271ff12727eef33a99f7a066eee3"
+    }
+  ]
+}

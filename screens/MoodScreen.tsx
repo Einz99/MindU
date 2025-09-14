@@ -287,6 +287,13 @@ export default function MoodScreen() {
           mood: Mood,
         });
 
+        try {
+          // Log student activity for the Wellness module
+          await axios.post(`${API}/student-activities/insert`, { module: 'Mood' });
+        } catch (err) {
+          console.error('Error logging student activity:', err);
+        }
+
         console.log('Success:', response.data.message);
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {

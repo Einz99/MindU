@@ -141,7 +141,21 @@ export default function MeditationScreen() {
     (wellness) => wellness.category === 'Meditation Guide' && wellness.status === 'Posted'
   );
 
-  const handleWellnessSelect = (id: number, index: number) => {
+  const handleWellnessSelect = async (id: number, index: number) => {
+    try {
+      // 1️⃣ Increment view count
+      await axios.post(`${API}/resources/increment-view/${id}`);
+    } catch (err) {
+      console.error('Error incrementing resource view:', err);
+    }
+
+    try {
+      // Log student activity for the Wellness module
+      await axios.post(`${API}/student-activities/insert`, { module: 'Wellness' });
+    } catch (err) {
+      console.error('Error logging student activity:', err);
+    }
+
     setSelectedWellnessId(id);
     setShowWellnessDetail(true);
     setVideoIndex(index);
@@ -152,6 +166,7 @@ export default function MeditationScreen() {
         useNativeDriver: true,
     }).start();
   };
+
   const closeArticleDetail = () => {
       // Animate the slide-out
       Animated.timing(slideAnim, {

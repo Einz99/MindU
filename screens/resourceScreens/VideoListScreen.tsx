@@ -58,16 +58,32 @@ export default function VideoList() {
       setQuery(text);
     };
 
-    const handleResourceSelect = (id: number) => {
-            setSelectedResourceId(id);
-            setShowArticleDetail(true);
-            // Animate the slide-in
-            Animated.timing(slideAnim, {
-                toValue: 0,
-                duration: 300,
-                useNativeDriver: true,
-            }).start();
-        };
+    const handleResourceSelect = async (id: number) => {
+      try {
+        // 1️⃣ Increment view count
+        await axios.post(`${API}/resources/increment-view/${id}`);
+      } catch (err) {
+        console.error('Error incrementing resource view:', err);
+      }
+
+      try {
+        // Log student activity for the Resource module
+        await axios.post(`${API}/student-activities/insert`, { module: 'Resource' });
+      } catch (err) {
+        console.error('Error logging student activity:', err);
+      }
+
+      setSelectedResourceId(id);
+      setShowArticleDetail(true);
+
+      // 3️⃣ Animate the slide-in
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    };
+
     const closeArticleDetail = () => {
             // Animate the slide-out
             Animated.timing(slideAnim, {

@@ -49,20 +49,38 @@ export default function ArticleList() {
     const [showArticleDetail, setShowArticleDetail] = useState(false);
     const [selectedResourceId, setSelectedResourceId] = useState<number | null>(null);
     const [slideAnim] = useState(new Animated.Value(1000)); // Start off-screen
+    const [webViewHeight, setWebViewHeight] = useState(0);
 
     const handleSearch = (text: string) => {
       setQuery(text);
     };
 
-    const handleResourceSelect = (id: number) => {
-        setSelectedResourceId(id);
-        setShowArticleDetail(true);
-        // Animate the slide-in
-        Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-        }).start();
+    const handleResourceSelect = async (id: number) => {
+      try {
+        // Increment view count
+        await axios.post(`${API}/resources/increment-view/${id}`);
+      } catch (err) {
+        console.error('Error incrementing resource view:', err);
+      }
+
+      try {
+        // Log student activity for the Resource module
+        await axios.post(`${API}/student-activities/insert`, { module: 'Resource' });
+      } catch (err) {
+        console.error('Error logging student activity:', err);
+      }
+
+
+      // Update local state to show the article
+      setSelectedResourceId(id);
+      setShowArticleDetail(true);
+
+      // Animate the slide-in
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     };
 
     const closeArticleDetail = () => {
@@ -200,7 +218,7 @@ export default function ArticleList() {
                       {new Date(article.modified_at).toLocaleString('en-US', options)}
                       {'\n'}
                     </Text>
-                    <Text style={styles.articleAuthor}>By Writer/Author</Text>
+                    <Text style={styles.articleAuthor}>By Guidance Office</Text>
                     <Image
                       source={{ uri: `${RootAPI}${article.banner}` }}
                       resizeMode="contain"
@@ -211,19 +229,21 @@ export default function ArticleList() {
                         <WebView
                           originWhitelist={['*']}
                           source={{ uri: `${RootAPI}${article.filepath}` }}
-                          javaScriptEnabled={true}
-                          domStorageEnabled={true}
+                          javaScriptEnabled
+                          domStorageEnabled
                           injectedJavaScript={`
-                            const style = document.createElement('style');
-                            style.innerHTML = \`
-                              p, span, li, h1, h2, h3, h4, h5, h6 {
-                                transform: scale(2);
-                                transform-origin: left top;
-                              }
-                            \`;
-                            document.head.appendChild(style);
+                            setTimeout(() => {
+                              window.ReactNativeWebView.postMessage(
+                                Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)
+                              );
+                            }, 300);
                             true;
                           `}
+                          onMessage={(event) => {
+                            setWebViewHeight(Number(event.nativeEvent.data));
+                          }}
+                          // eslint-disable-next-line react-native/no-inline-styles
+                          style={{ width: '100%', height: webViewHeight || 300 }}
                         />
                         )}
                     </View>

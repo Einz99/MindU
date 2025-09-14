@@ -21,6 +21,19 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import axios from 'axios';
 import { API } from '../../apiConfigs';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import apiClient from '../../APIClient';
+
+GoogleSignin.configure({
+  // Use web client ID only if you need offline access (optional)
+  webClientId: '243983660210-pftvkd4r77dbmpmseak1s116tjf7jqdp.apps.googleusercontent.com',
+
+  // Mandatory for Android validation
+  offlineAccess: true, // if you need refresh tokens
+
+  // Force code flow to avoid DEVELOPER_ERROR
+  forceCodeForRefreshToken: true,
+});
 
 export default function LoginScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -54,6 +67,32 @@ export default function LoginScreen() {
       if (response.accessToken && response.refreshToken) {
         await AsyncStorage.setItem('userToken', response.accessToken);
         await AsyncStorage.setItem('refreshToken', response.refreshToken);
+
+        let student_id = null;
+        try {
+          const userRes = await apiClient.get(`${API}/user`, {
+            headers: { Authorization: `Bearer ${response.accessToken}` },
+          });
+
+          if (userRes.data && userRes.data.user) {
+            student_id = userRes.data.user.id;
+          } else {
+            console.error('Failed to fetch user details.');
+          }
+        } catch (err) {
+          console.error('Error fetching user info:', err);
+        }
+
+        // -------------------------
+        // Insert daily login if student_id available
+        // -------------------------
+        if (student_id) {
+          try {
+            await axios.post(`${API}/student-login-percentages/insert`, { student_id });
+          } catch (insertErr) {
+            console.error('Error inserting daily login:', insertErr);
+          }
+        }
 
         if (response.user.firstLogin) {
           setIsSuccessful(true);
@@ -150,6 +189,62 @@ export default function LoginScreen() {
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+
+      await GoogleSignin.hasPlayServices();
+      const userInfo: any = await GoogleSignin.signIn();
+      const googleEmail = userInfo.user?.email ?? userInfo.email;
+
+      console.log('Google email:', googleEmail);
+
+      if (!googleEmail) {
+        throw new Error('Unable to retrieve email from Google Sign-In');
+      }
+
+      // Call backend
+      const res = await axios.post(`${API}/google-login`, { email: googleEmail });
+
+      const { accessToken, refreshToken, user } = res.data;
+
+      if (accessToken && refreshToken) {
+        await AsyncStorage.setItem('userToken', accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+
+        if (user.firstLogin) {
+          setIsSuccessful(true);
+          setMessageError('Login Successful. Please Update Your Password');
+          setAlertModal(true);
+          setTimeout(() => navigation.navigate('Updating'), 1000);
+        } else {
+          navigation.dispatch(
+            CommonActions.reset({
+              index: 0,
+              routes: [{ name: 'Homepage' }],
+            })
+          );
+        }
+      } else {
+        setIsSuccessful(false);
+        setMessageError('Login Failed. Invalid Credentials');
+        setAlertModal(true);
+      }
+    } catch (error) {
+      console.error('Google login error:', error);
+      setIsSuccessful(false);
+      setMessageError(
+        axios.isAxiosError(error)
+          ? 'Did not receive expected response from server. Please try again.'
+          : 'Google login failed. Please try again.'
+      );
+      setAlertModal(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
@@ -192,6 +287,9 @@ export default function LoginScreen() {
           <TouchableOpacity style={styles.forgot} disabled={loading} onPress={() => setShowModal(true)}>
             <Text style={styles.forgotTxt}>Forgot Password</Text>
           </TouchableOpacity>
+          {/* <TouchableOpacity onPress={handleGoogleLogin} disabled={loading}>
+            <Image source={require('../../assets/images/google.png')} style={styles.google} />
+          </TouchableOpacity> */}
         </View>
 
         {/* Forgot Password Modal */}
@@ -472,5 +570,6 @@ const styles = StyleSheet.create({
   marginB: {
     marginBottom: 10,
   },
+  google: { width: 30, height: 30, marginTop: 15, borderRadius: 99 },
 });
 
