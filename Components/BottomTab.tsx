@@ -35,8 +35,13 @@ export default function BottomBarNavComponent() {
     if (!navState || !navState.routes) {return null;}
     const route = navState.routes[navState.index];
     // If this route has nested state, recurse
-    if (route.state) {
-      return getActiveRouteName(route.state);
+    if (
+      route.state &&
+      typeof route.state === 'object' &&
+      'routes' in route.state &&
+      typeof route.state.index === 'number'
+    ) {
+      return getActiveRouteName(route.state as NavigationState);
     }
     return route.name;
   };
@@ -108,7 +113,7 @@ export default function BottomBarNavComponent() {
             </View>
           ))}
         </ScrollView>
-
+        {/* eslint-disable react-native/no-inline-styles */}
         <View style={{position: 'absolute', right: 20, top: 10}}>
           <TouchableOpacity onPress={() => setModalVisible(false)}>
             <Ionicons name="arrow-back" size={25} color="#000" />

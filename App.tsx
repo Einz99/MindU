@@ -10,11 +10,18 @@ import ForgotScreen from './screens/startingScreens/ForgotScreen';
 import OnboardingScreen from './screens/startingScreens/OnBoardingScreen';
 import DebugScreen from './screens/Debugger';
 import 'text-encoding';
+import { NetworkInfo } from 'react-native-network-info';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
+
+NetworkInfo.getIPV4Address().then(ipAddress => {
+  console.log('Local IPv4:', ipAddress); // Should show 192.168.1.6
+});
+
+
 return (
   <NavigationContainer>
     <Stack.Navigator initialRouteName="Splash">
