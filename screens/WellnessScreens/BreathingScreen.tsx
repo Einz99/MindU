@@ -188,7 +188,7 @@ export default function MeditationScreen() {
 
   return (
     <View style={styles.container}>
-      <DrawerComponent Initial={'Wellness Tools'} />
+      <DrawerComponent Initial={'Breathing Exercises'} />
       <View style={styles.titleBox}>
         <Text style={styles.title}>Wellness Tools</Text>
       </View>

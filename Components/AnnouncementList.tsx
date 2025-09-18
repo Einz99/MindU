@@ -1,11 +1,10 @@
-import React, { useState, useRef, FC, useCallback } from 'react';
+import React, { FC } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
-  FlatList,
-  TouchableOpacity,
+  ScrollView,
   TextStyle,
 } from 'react-native';
 
@@ -32,19 +31,6 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
   getCategoryColor,
   formatDate,
 }) => {
-  const [activeIndex, setActiveIndex] = useState(0);
-  const flatListRef = useRef<FlatList>(null);
-  const ITEM_HEIGHT = 100; // Integer value for item height
-
-  // Duplicate declaration removed
-
-  const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
-    if (viewableItems.length > 0) {
-      setActiveIndex(viewableItems[0].index);
-    }
-  }, []);
-
-  // We'll keep the implementation simple to avoid precision errors
   if (loading) {
     return (
       <View style={styles.loaderContainer}>
@@ -61,15 +47,8 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
     );
   }
 
-  // Calculate the effective array to display, repeated for infinite scrolling
-  const effectiveItems = announcements.length > 0
-    ? [...announcements, ...announcements, ...announcements]
-    : [];
-
-  const renderItem = ({ item, index }: { item: Announcement; index: number }) => {
-    // Determine if this is the active item
-    const isActive = index === activeIndex;
-
+  // Define the renderItem function
+  const renderItem = (item: Announcement, index: number) => {
     // Define category style with proper TypeScript typing
     const categoryStyle: TextStyle = {
       color: getCategoryColor(item.category),
@@ -89,82 +68,35 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
     };
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={() => {
-          flatListRef.current?.scrollToIndex({
-            index,
-            animated: true,
-          });
-          setActiveIndex(index);
-        }}
-      >
-        <View
-          style={[
-            styles.announcementItem,
-            isActive ? styles.activeItem : styles.inactiveItem,
-          ]}
-        >
+      <View style={styles.outerAnnounceItem} key={index}>
+        <View style={styles.announcementItem}>
           <View style={styles.categoryContainer}>
             <View>
               <Text style={categoryStyle}>{item.category}{'\u25CF'}</Text>
             </View>
           </View>
           <Text style={styles.announcementTitleText}>{item.title}</Text>
-          <Text numberOfLines={isActive ? 3 : 2} style={styles.announcementContent}>
+          <Text numberOfLines={3} style={styles.announcementContent}>
             {item.announcementContent}
           </Text>
           <Text style={styles.announcementDate}>{formatDate(item.modified_at)}</Text>
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
-  const viewabilityConfig = {
-    itemVisiblePercentThreshold: 50,
-  };
-
   return (
-    <View style={styles.container}>
-      <FlatList
-        ref={flatListRef}
-        data={effectiveItems}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => `${item.ID}-${index}`}
-        showsVerticalScrollIndicator={false}
-        snapToInterval={ITEM_HEIGHT}
-        decelerationRate="fast"
-        contentContainerStyle={styles.listContent}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        initialNumToRender={3}
-        maxToRenderPerBatch={5}
-        windowSize={5}
-        initialScrollIndex={announcements.length} // Start in the middle set of items
-        getItemLayout={(data, index) => ({
-          length: ITEM_HEIGHT,
-          offset: ITEM_HEIGHT * index,
-          index,
-        })}
-        onEndReached={() => {
-          // When reaching the end, jump back to the middle set
-          const middleIndex = announcements.length;
-          flatListRef.current?.scrollToIndex({
-            index: middleIndex,
-            animated: false,
-          });
-          setActiveIndex(middleIndex);
-        }}
-        onEndReachedThreshold={0.1}
-      />
-    </View>
+      <ScrollView contentContainerStyle={styles.listContent}>
+        {announcements.map((item, index) => renderItem(item, index))}
+      </ScrollView>
   );
 };
+
+export default AnnouncementList;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 10,
   },
   listContent: {
     paddingVertical: 30,
@@ -183,29 +115,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'gray',
   },
+  outerAnnounceItem: { backgroundColor: 'orange', borderRadius: 20, marginBottom: 20 },
   announcementItem: {
-    height: 100,
-    marginHorizontal: 10,
+    height: 140,  // Fixed height for all items
     backgroundColor: 'white',
     borderRadius: 15,
     padding: 16,
-    marginVertical: 12.5,
+    marginVertical: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 5,
     position: 'relative',
-  },
-  activeItem: {
-    transform: [{ scale: 1 }],
-    opacity: 1,
-    height: 140,
-  },
-  inactiveItem: {
-    transform: [{ scale: 0.9 }],
-    opacity: 0.7,
-    height: 80,
   },
   categoryContainer: {
     flexDirection: 'row',
@@ -237,5 +159,3 @@ const styles = StyleSheet.create({
     fontFamily: 'Lora-Regular',
   },
 });
-
-export default AnnouncementList;

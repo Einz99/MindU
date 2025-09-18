@@ -4,7 +4,6 @@ import axios from 'axios';
 import { API, RootAPI } from '../apiConfigs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import DrawerComponent from '../Components/DrawerComponent';
 import { io } from 'socket.io-client';
 import apiClient from '../APIClient';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
@@ -23,7 +22,7 @@ interface Backlog {
     completed_at?: string | null;
   }
 
-export default function CalendarScreen() {
+export default function CalendarComponent() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const today = new Date();
   const [currentMonth, setCurrentMonth] = useState(today.getMonth()); // Make it 1-indexed
@@ -235,12 +234,6 @@ export default function CalendarScreen() {
 
     return (
         <View style={styles.container}>
-          <DrawerComponent Initial={'Calendar'} />
-            <View style={styles.titleBox}>
-                <Text style={styles.title}>
-                    Calendar
-                </Text>
-            </View>
             <View style={styles.calendarContainer}>
                 <View style={styles.header}>
                     <Text style={styles.yearText}>S.Y. {currentYear}</Text>

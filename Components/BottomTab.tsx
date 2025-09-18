@@ -2,11 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Keyboard, View, StyleSheet, TouchableOpacity, Image, Modal, Text, ScrollView, Dimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import HomepageScreen from '../screens/HomepageScreen';
-import SettingsScreen from '../screens/SettingsScreen';
 import ResourcesNavigator from './ResourcesNavigator';
 import WellnessNavigator from './WellnessNavigator';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import CalendarScreen from '../screens/CalendarScreen';
 import MoodScreen from '../screens/MoodScreen';
 import ChatbotScreen from '../screens/ChatbotScreen';
 import { useNavigationState, NavigationState } from '@react-navigation/native';
@@ -185,31 +183,27 @@ export default function BottomBarNavComponent() {
         },
         // eslint-disable-next-line react/no-unstable-nested-components
         tabBarIcon: ({ focused }) => {
-          let color = focused ? '#333' : '#666';
-          const icons: Record<string, string> = {
-            Home: 'home-outline',
-            Settings: 'person-circle-outline',
-            Chatbot: 'chatbubble-ellipses-outline',
-            Wellness: 'heart-circle-outline',
-            Resources: 'podium-outline',
-            Calendar: 'calendar-clear-outline',
-            Mood: 'happy-outline',
+          const iconSource: Record<'Home' | 'Chatbot' | 'Wellness' | 'Resources' | 'Mood', any> = {
+            Home: require('../assets/images/apphome.png'),
+            Chatbot: require('../assets/images/appchatbot.png'),
+            Wellness: require('../assets/images/appwellnesstools.png'),
+            Resources: require('../assets/images/applibrary.png'),
+            Mood: require('../assets/images/appmoodtracker.png'),
           };
 
-          const iconName = icons[route.name] || 'alert-circle-outline';
+          const iconName = iconSource[route.name as keyof typeof iconSource] || require('../assets/images/apphome.png'); // Default to Home if not found
 
           if (route.name === 'Chatbot') {
             return (
               <View
                 style={[
                   styles.centerIconContainer,
-                  // eslint-disable-next-line react-native/no-inline-styles
                   keyboardVisible && { bottom: -20 },
                 ]}
               >
                 <View style={styles.centerIconCircle}>
                   <View style={styles.centerIcon}>
-                    <Ionicons name={iconName} size={25} color="#333" />
+                    <Image source={iconName} style={{ width: 30, height: 30 }} />
                   </View>
                 </View>
                 {focused && <View style={styles.indicatorDot} />}
@@ -218,7 +212,7 @@ export default function BottomBarNavComponent() {
           } else {
             return (
               <View style={styles.tabIconWrapper}>
-                <Ionicons name={iconName} size={25} color={color} />
+                <Image source={iconName} style={{ width: 25, height: 25 }} />
                 {focused && <View style={styles.indicatorDot} />}
               </View>
             );
@@ -243,6 +237,7 @@ export default function BottomBarNavComponent() {
           },
         })}
       />
+      <Tab.Screen name="Chatbot" component={ChatbotScreen} />
       <Tab.Screen
         name="Wellness"
         component={WellnessNavigator}
@@ -252,10 +247,7 @@ export default function BottomBarNavComponent() {
           },
         })}
       />
-      <Tab.Screen name="Chatbot" component={ChatbotScreen} />
       <Tab.Screen name="Mood" component={MoodScreen} />
-      <Tab.Screen name="Calendar" component={CalendarScreen} />
-      <Tab.Screen name="Settings" component={SettingsScreen} />
     </Tab.Navigator>
     </View>
   );

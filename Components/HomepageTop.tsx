@@ -117,8 +117,10 @@ export default function HomepageTop( { navigation }: ChildComponentProps ) {
         <View>
             <View style={styles.topContainer}>
                 <View style={styles.infoContainer}>
-                    {/* eslint-disable-next-line react-native/no-inline-styles */}
-                    <Text style={[styles.name, {fontSize: name.length > 9 ? 16 : 25}]}>Hi, {name}!</Text>
+                    <Text style={styles.name}>
+                      {/* eslint-disable-next-line react-native/no-inline-styles */}
+                      Hi, <Text style={[styles.name, { color: 'white', textShadowColor: '#317873', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }]}>{name}</Text>
+                    </Text>
                     <Text style={styles.date}>{today}</Text>
                     <View style={styles.affirmation}>
                       <TouchableOpacity onPress={() => {

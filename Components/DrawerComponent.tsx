@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
     TouchableOpacity,
     StyleSheet,
@@ -8,6 +8,7 @@ import {
     Easing,
     TouchableWithoutFeedback,
     ScrollView,
+    Image,
 } from 'react-native';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { BottomTabParamList, RootStackParamList } from '../types';
@@ -53,31 +54,28 @@ export default function DrawerComponent({ Initial }: DrawerProps) {
         setExpanded((prev) => (prev === section ? null : section));
     };
 
+    useEffect(() => {
+        if(Initial === 'Articles' || Initial === 'Videos' || 'Crisis Helpline')
+        {toggleExpand('resource');}
+        if(Initial === 'Breathing Exercises' || Initial === 'Meditation Guides')
+        {toggleExpand('wellness');}
+    }, [Initial]);
+
     // eslint-disable-next-line react/no-unstable-nested-components
-    const MenuItem = ({ title, onPress }: { title: string; onPress: () => void }) => (
-        <TouchableOpacity onPress={onPress} style={styles.menuItem}>
-            <View style={styles.dot} />
-            {(
-              (expanded === null && Initial === title) ||
-              (expanded === 'resource' && title === 'Resource Library') ||
-              (expanded === 'wellness' && title === 'Wellness Tools')
-            ) && <View style={styles.subDot} />}
-            <Text style={styles.menuText}>{title}</Text>
+    const MenuItem = ({ title, onPress, isDisabled, subItem }: { title: string; onPress: () => void; isDisabled: boolean; subItem: boolean }) => (
+        <TouchableOpacity
+            onPress={!isDisabled ? onPress : undefined}
+            style={[styles.menuItem, isDisabled && styles.disabledItem]}>
+            <Text style={[styles.menuText, (isDisabled || subItem) && styles.disabledText]}>{title}</Text>
         </TouchableOpacity>
     );
 
     // eslint-disable-next-line react/no-unstable-nested-components
-    const SubItem = ({ title, onPress }: { title: string; onPress: () => void }) => (
-        <TouchableOpacity onPress={onPress} style={styles.subItem}>
-            <Text style={styles.subText}>{title}</Text>
+    const SubItem = ({ title, onPress, isDisabled }: { title: string; onPress: () => void; isDisabled: boolean }) => (
+        <TouchableOpacity onPress={!isDisabled ? onPress : undefined} style={styles.subItem}>
+            <Text style={[styles.subText, isDisabled && styles.disabledText]}>{title}</Text>
         </TouchableOpacity>
     );
-
-    const getSidebarHeight = () => {
-        if (expanded === 'resource') {return 365;}
-        else if (expanded === 'wellness') {return 330;}
-        else {return 265;}
-      };
 
     return (
         <>
@@ -97,40 +95,71 @@ export default function DrawerComponent({ Initial }: DrawerProps) {
                         <Ionicons name="return-up-back-outline" size={30} color="white" />
                     </TouchableOpacity>
                 </View>
+                <Image
+                    source={require('../assets/images/MindUIcon.png')}
+                    style={styles.Image}
+                />
                 <View style={styles.SidebarContent}>
                     <Text style={styles.SidebarTitle}>MIND-U</Text>
 
                     <ScrollView showsVerticalScrollIndicator={false}>
-                        <View style={[styles.verticalLine, {height: getSidebarHeight()}]} />
                         <MenuItem
                           title="Home"
-                          onPress={() => {
-                            navigation.navigate('Homepage', { screen: 'Home' });
-                            closeSidebar();
-                          }}
+                          isDisabled={Initial === 'Home'}
+                          onPress={() => BottomNavigation.navigate('Home')}
+                          subItem={false}
                         />
 
-                        <MenuItem title="Resource Library" onPress={() => toggleExpand('resource')} />
+                        <MenuItem
+                          title="Resource Library"
+                          onPress={() => toggleExpand('resource')}
+                          isDisabled={false}
+                          subItem={Initial === 'Articles' || Initial === 'Videos' || Initial === 'Crisis Helpline' || Initial === 'Resource Library'}
+                        />
                         {expanded === 'resource' && (
                           <>
-                            <SubItem title="Articles" onPress={() => navigation.navigate('Resources', { screen: 'ArticlesList' })} />
-                            <SubItem title="Videos" onPress={() => navigation.navigate('Resources', { screen: 'VideosList' })} />
-                            <SubItem title="Crisis Helpline" onPress={() => navigation.navigate('Resources', { screen: 'EmergencyList' })} />
+                            <SubItem
+                              title="Articles"
+                              onPress={() => navigation.navigate('Resources', { screen: 'ArticlesList' })}
+                              isDisabled={Initial === 'Articles'}
+                            />
+                            <SubItem
+                              title="Videos"
+                              onPress={() => navigation.navigate('Resources', { screen: 'VideosList' })}
+                              isDisabled={Initial === 'Videos'}
+                            />
+                            <SubItem
+                              title="Crisis Helpline"
+                              onPress={() => navigation.navigate('Resources', { screen: 'EmergencyList' })}
+                              isDisabled={Initial === 'Crisis Helpline'}
+                            />
                           </>
                         )}
 
-                        <MenuItem title="Wellness Tools" onPress={() => toggleExpand('wellness')} />
+                        <MenuItem
+                          title="Wellness Tools"
+                          onPress={() => toggleExpand('wellness')}
+                          isDisabled={Initial === 'Wellness Tools'}
+                          subItem={Initial === 'Breathing Exercises' || Initial === 'Meditation Guides' || Initial === 'Wellness Tools'}
+                        />
                         {expanded === 'wellness' && (
                           <>
-                            <SubItem title="Meditation Guides" onPress={() => navigation.navigate('Wellness', { screen: 'Meditation' })} />
-                            <SubItem title="Breathing Exercises" onPress={() => navigation.navigate('Wellness', { screen: 'Breathing' })} />
+                            <SubItem
+                              title="Meditation Guides"
+                              onPress={() => navigation.navigate('Wellness', { screen: 'Meditation' })}
+                              isDisabled={Initial === 'Meditation Guides'}
+                            />
+                            <SubItem
+                              title="Breathing Exercises"
+                              onPress={() => navigation.navigate('Wellness', { screen: 'Breathing' })}
+                              isDisabled={Initial === 'Breathing Exercises'}
+                            />
                           </>
                         )}
 
-                        <MenuItem title="Chatbot" onPress={() => BottomNavigation.navigate('Chatbot')} />
-                        <MenuItem title="Mood tracker" onPress={() => BottomNavigation.navigate('Mood')} />
-                        <MenuItem title="Calendar" onPress={() => BottomNavigation.navigate('Calendar')} />
-                        <MenuItem title="Profile" onPress={() => BottomNavigation.navigate('Settings')} />
+                        <MenuItem title="Chatbot" onPress={() => BottomNavigation.navigate('Chatbot')} isDisabled={Initial === 'Chatbot'} subItem={false}/>
+                        <MenuItem title="Mood tracker" onPress={() => BottomNavigation.navigate('Mood')} isDisabled={Initial === 'Mood tracker'} subItem={false}/>
+                        <MenuItem title="Profile" onPress={() => BottomNavigation.navigate('Settings')} isDisabled={Initial === 'Profile'} subItem={false}/>
                     </ScrollView>
                 </View>
             </Animated.View>
@@ -163,7 +192,7 @@ const styles = StyleSheet.create({
     },
     SidebarContent: {
         marginTop: 50,
-        paddingLeft: 30,
+        paddingLeft: 20,
         paddingRight: 10,
         flex: 1,
     },
@@ -180,40 +209,19 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins-Bold',
         color: 'white',
         fontSize: 35,
-        textAlign: 'center',
+        textAlign: 'left',
         marginBottom: 20,
     },
-    verticalLine: {
-        position: 'absolute',
-        top: 10,
-        bottom: 0,
-        left: 3,
-        width: 3,
-        borderRadius: 9999,
-        backgroundColor: '#b7e3cc',
-        zIndex: 0, // behind
-      },
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         marginBottom: 16,
         position: 'relative',
     },
-    dot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: '#b7e3cc',
-        position: 'absolute',
-        left: 0, // center dot over the line at left: 18
-        zIndex: 2, // make sure dot is above the line
-      },
     menuText: {
         fontSize: 16,
         color: 'white',
         fontFamily: 'Poppins-Medium',
-        paddingLeft: 10,
-        marginLeft: 20,
     },
     subItem: {
         paddingLeft: 18,
@@ -225,14 +233,12 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins-Regular',
         marginLeft: 25,
     },
-    subDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 5,
-        backgroundColor: '#317873',
-        position: 'absolute',
-        left: 0.8, // center dot over the line at left: 18
-        top: 9.5,
-        zIndex: 2, // make sure dot is above the line
-      },
+    // Disabled styling for the MenuItem
+    disabledItem: {
+        opacity: 0.5, // Dim the disabled item
+    },
+    disabledText: {
+        color: '#b7e3cc', // Set text color for disabled items
+    },
+    Image: {height: 150, width: 150, marginHorizontal: 'auto', marginTop: 50},
 });

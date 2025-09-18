@@ -182,7 +182,7 @@ export default function VideoList() {
 
     return (
       <View style={styles.container}>
-        <DrawerComponent Initial={'Resource Library'} />
+        <DrawerComponent Initial={'Videos'} />
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={25} color="#000" />
         </TouchableOpacity>

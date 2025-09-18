@@ -122,8 +122,8 @@ export default function ChatbotScreen() {
   const handleUserInput = async (text: string) => {
     if (!text.trim()) { return; }
 
+    // Log student activity for the Wellness module
     try {
-      // Log student activity for the Wellness module
       await axios.post(`${API}/student-activities/insert`, { module: 'Chatbot' });
     } catch (err) {
       console.error('Error logging student activity:', err);
@@ -140,7 +140,11 @@ export default function ChatbotScreen() {
     if (lastBot?.options?.some((opt) => MAIN_MENU.includes(opt))) {
       const bestMatch = stringSimilarity.findBestMatch(text, MAIN_MENU);
       if (bestMatch.bestMatch.rating >= 0.6) {
-        handleUserInput(bestMatch.bestMatch.target); // act like user tapped it
+        if (bestMatch.bestMatch.target === text) {
+          // Prevent re-triggering if the input was already processed
+          return;
+        }
+        handleUserInput(bestMatch.bestMatch.target); // Act like user tapped it
         return;
       }
     }
@@ -152,6 +156,10 @@ export default function ChatbotScreen() {
       const topicQuestions = Object.keys(FAQ_TREE[lastBot.topic].questions);
       const bestMatch = stringSimilarity.findBestMatch(text, topicQuestions);
       if (bestMatch.bestMatch.rating >= 0.6) {
+        if (bestMatch.bestMatch.target === text) {
+          // Prevent re-triggering if the input was already processed
+          return;
+        }
         handleUserInput(bestMatch.bestMatch.target);
         return;
       }
