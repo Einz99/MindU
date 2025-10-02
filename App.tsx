@@ -11,6 +11,7 @@ import OnboardingScreen from './screens/startingScreens/OnBoardingScreen';
 import DebugScreen from './screens/Debugger';
 import 'text-encoding';
 import { NetworkInfo } from 'react-native-network-info';
+import SettingsScreen from './screens/SettingsScreen';
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,6 +33,7 @@ return (
       <Stack.Screen name="Homepage" component={BottomTabs} options={{headerShown: false}}/>
       <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{headerShown: false}}/>
       <Stack.Screen name="Debug" component={DebugScreen} options={{headerShown: false}}/>
+      <Stack.Screen name="Settings" component={SettingsScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   </NavigationContainer>
 );

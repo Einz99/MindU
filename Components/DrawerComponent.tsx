@@ -159,7 +159,7 @@ export default function DrawerComponent({ Initial }: DrawerProps) {
 
                         <MenuItem title="Chatbot" onPress={() => BottomNavigation.navigate('Chatbot')} isDisabled={Initial === 'Chatbot'} subItem={false}/>
                         <MenuItem title="Mood tracker" onPress={() => BottomNavigation.navigate('Mood')} isDisabled={Initial === 'Mood tracker'} subItem={false}/>
-                        <MenuItem title="Profile" onPress={() => BottomNavigation.navigate('Settings')} isDisabled={Initial === 'Profile'} subItem={false}/>
+                        <MenuItem title="Profile" onPress={() => navigation.navigate('Settings')} isDisabled={Initial === 'Profile'} subItem={false}/>
                     </ScrollView>
                 </View>
             </Animated.View>

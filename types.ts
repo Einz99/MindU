@@ -6,8 +6,6 @@ export type BottomTabParamList = {
   Wellness: undefined;
   Chatbot: undefined;
   Mood: undefined;
-  Calendar: undefined;
-  Settings: undefined;
 };
 
 export type ResourcesStackParamList = {
@@ -32,6 +30,7 @@ export type RootStackParamList = {
   Homepage: NavigatorScreenParams<BottomTabParamList>; // 👈 nested tab
   Debug: undefined;
   Drawer: undefined;
+  Settings: undefined;
 
   Resources: NavigatorScreenParams<ResourcesStackParamList>; // 👈 nested stack
   Wellness: NavigatorScreenParams<WellnessStackParamList>;  // 👈 nested stack
