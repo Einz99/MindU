@@ -18,7 +18,7 @@ import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient from '../APIClient';
-import { API } from '../apiConfigs';
+import { RootAPI, API } from '../apiConfigs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import stringSimilarity from 'string-similarity';
 import { io, Socket } from 'socket.io-client';
@@ -55,9 +55,46 @@ export default function ChatbotScreen() {
     const [isAgent, setIsAgent] = useState(false);
     const [isAgentAvailable, setIsAgentAvailable] = useState(false);
 
+    useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          const token = await AsyncStorage.getItem('userToken');
+          if (!token) {
+            setIsSuccessful(false);
+            setMessageError('User not found. Please try logging in again.');
+            setAlertModal(true);
+            setTimeout(() => navigation.navigate('Login'), 1000);
+            return;
+          }
+          const response = await apiClient.get(`${API}/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.data?.user) {
+            setStudentID(response.data.user.id);
+            if (response.data.user.isAskingHelp && !isAgentAvailable) {
+              setIsAgent(response.data.user.isAskingHelp);
+              setIsAI(response.data.user.isAskingHelp && !isAgent);
+            }
+          } else {
+            setIsSuccessful(false);
+            setMessageError('User not found. Please try logging in again.');
+            setAlertModal(true);
+            setStudentID(0);
+            setIsAI(false);
+            setIsAgent(false);
+          }
+        } catch (error) {
+          setIsSuccessful(false);
+          setMessageError('Server Error: Unable to connect. Please try again.');
+          setAlertModal(true);
+        }
+      };
+      fetchUserData();
+    }, [isAgent, isAgentAvailable, navigation]);
+
     // Initialize Socket.IO connection
     useEffect(() => {
-      socketRef.current = io(API, {
+      socketRef.current = io(RootAPI, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
@@ -83,18 +120,19 @@ export default function ChatbotScreen() {
       };
     }, []);
 
-    // Listen for agent joining
+    // Replace the "Listen for agent joining" useEffect with this:
     useEffect(() => {
       if (socketRef.current && studentID) {
-        socketRef.current.on('join-agent', (data) => {
-          console.log('🎉 Agent joined the chat:', data);
+        socketRef.current.on('agent-available', (data) => {
+          console.log('🎉 Agent is now available:', data);
+
           if (data.isAgentAvailable && data.student_id === studentID) {
             setIsAI(false);
             setIsAgentAvailable(true);
             setIsAgent(true);
 
             addMessage({
-              from: 'bot',
+              from: 'counselor',
               text: 'A counselor has joined the chat and will assist you shortly.',
               mode: 'counselor',
             });
@@ -103,12 +141,71 @@ export default function ChatbotScreen() {
 
         return () => {
           if (socketRef.current) {
-            socketRef.current.off('join-agent');
+            socketRef.current.off('agent-available');
           }
         };
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [socketRef.current, studentID]);
+    }, [studentID]);
+
+    useEffect(() => {
+      if (socketRef.current && studentID) {
+        socketRef.current.on('agent-disconnection', (data) => {
+          console.log('🎉 Agent is now available:', data);
+
+          if (data.isAgentAvailable && data.student_id === studentID) {
+            setIsAI(false);
+            setIsAgentAvailable(false);
+            setIsAgent(false);
+
+            setMessages((prev) => [...prev, {
+              from: 'bot',
+              text: 'Welcome! How can I support your wellbeing today?',
+              mode: 'faq',
+              options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+            }]);
+          }
+        });
+
+        return () => {
+          if (socketRef.current) {
+            socketRef.current.off('agent-disconnecting');
+          }
+        };
+      }
+    }, [studentID]);
+
+    useEffect(() => {
+      const saveAgentAvailableState = async () => {
+        try {
+          await AsyncStorage.setItem(
+            'isAgentAvailable',
+            JSON.stringify(isAgentAvailable)
+          );
+          console.log('💾 Saved isAgentAvailable:', isAgentAvailable);
+        } catch (error) {
+          console.error('Error saving agent available state:', error);
+        }
+      };
+
+      saveAgentAvailableState();
+    }, [isAgentAvailable]);
+
+    useEffect(() => {
+      const loadAgentAvailableState = async () => {
+        try {
+          const savedState = await AsyncStorage.getItem('isAgentAvailable');
+          if (savedState !== null) {
+            const isAvailable = JSON.parse(savedState);
+            setIsAgentAvailable(isAvailable);
+            console.log('📂 Loaded isAgentAvailable:', isAvailable);
+          }
+        } catch (error) {
+          console.error('Error loading agent available state:', error);
+        }
+      };
+
+      loadAgentAvailableState();
+    }, []); // Run only once on mount
 
     // Listen for new chat messages
     useEffect(() => {
@@ -120,16 +217,11 @@ export default function ChatbotScreen() {
 
           // Only process messages for this student
           if (student_id === studentID) {
-            setMessages((prevMessages) => [
-              ...prevMessages,
-              {
+            addMessage({
                 from: is_from_office ? 'counselor' : 'user',
                 text: message,
                 mode: is_from_office ? 'counselor' : isAI ? 'chat' : 'faq',
-              },
-            ]);
-
-            setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+              });
           }
         });
 
@@ -165,43 +257,6 @@ export default function ChatbotScreen() {
     }, []);
 
     useEffect(() => {
-      const fetchUserData = async () => {
-        try {
-          const token = await AsyncStorage.getItem('userToken');
-          if (!token) {
-            setIsSuccessful(false);
-            setMessageError('User not found. Please try logging in again.');
-            setAlertModal(true);
-            setTimeout(() => navigation.navigate('Login'), 1000);
-            return;
-          }
-          const response = await apiClient.get(`${API}/user`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (response.data?.user) {
-            setStudentID(response.data.user.id);
-            if (response.data.user.isAskingHelp && !isAgentAvailable) {
-              setIsAgent(response.data.user.isAskingHelp);
-              setIsAI(true);
-            }
-          } else {
-            setIsSuccessful(false);
-            setMessageError('User not found. Please try logging in again.');
-            setAlertModal(true);
-            setStudentID(0);
-            setIsAI(false);
-            setIsAgent(false);
-          }
-        } catch (error) {
-          setIsSuccessful(false);
-          setMessageError('Server Error: Unable to connect. Please try again.');
-          setAlertModal(true);
-        }
-      };
-      fetchUserData();
-    }, [isAgentAvailable, navigation]);
-
-    useEffect(() => {
       const keyboardListener = Keyboard.addListener('keyboardDidShow', () => {
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
       });
@@ -234,7 +289,7 @@ export default function ChatbotScreen() {
             setMessages(combinedMessages);
 
             if (!isAgent || isAI) {
-                setMessages((prev) => [...prev, {
+              setMessages((prev) => [...prev, {
                 from: 'bot',
                 text: 'Welcome! How can I support your wellbeing today?',
                 mode: 'faq',
@@ -272,12 +327,29 @@ export default function ChatbotScreen() {
         console.error('Error logging student activity:', err);
       }
 
-      addMessage({ from: 'user', text, mode: isAgent && isAgentAvailable ? 'counselor' : 'faq' });
-
       const lastBot = messages.filter((m) => m.from === 'bot').slice(-1)[0];
 
       // If chatting with live agent
       if (isAgent && !isAI) {
+        if (text.toLowerCase() === 'exit') {
+          setIsAI(false);
+          setIsAgentAvailable(false);
+          setIsAgent(false);
+          try {
+            await axios.post(`${API}/chatbot/deactivateStatus/${studentID}`);
+          } catch (error) {
+            console.error('Error changing status');
+          }
+
+          setMessages((prev) => [...prev, {
+            from: 'bot',
+            text: 'Welcome! How can I support your wellbeing today?',
+            mode: 'faq',
+            options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+          }]);
+          return;
+        }
+
         try {
           await axios.post(`${API}/chatbot/insert-chat-message`, {
             student_id: studentID,
@@ -478,6 +550,7 @@ export default function ChatbotScreen() {
             ]);
             setIsAI(false);
             setIsAgent(false);
+            setIsAgentAvailable(false);
           }
         }, 2000);
         return;
@@ -551,7 +624,7 @@ export default function ChatbotScreen() {
           {(isAgent && isAgentAvailable) && (
             <View style={[styles.aiIndicatorContainer, {backgroundColor: '#e8f5e9', borderColor: '#81c784'}]}>
               <Text style={[styles.aiIndicatorText, {color: '#2e7d32'}]}>
-                👨‍🏫 Connected with guidance counselor
+                👨‍🏫 Connected with guidance counselor • type "exit" to disconnect and return to menu.
               </Text>
             </View>
           )}
