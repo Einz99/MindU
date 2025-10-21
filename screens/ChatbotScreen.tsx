@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-inline-styles */
 import React, { useState, useEffect, useRef } from 'react';
 import {
   ScrollView,
@@ -20,7 +21,7 @@ import apiClient from '../APIClient';
 import { API } from '../apiConfigs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import stringSimilarity from 'string-similarity';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { MAIN_MENU, MAIN_MENU_PROMPT, FAQ_TREE } from '../data/faqTree';
 import { useIsFocused } from '@react-navigation/native';
 import axios from 'axios';
@@ -40,6 +41,7 @@ export default function ChatbotScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const scrollRef = useRef<ScrollView>(null);
     const isFocused = useIsFocused();
+    const socketRef = useRef<Socket | null>(null);
 
     const [input, setInput] = useState('');
     const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -49,490 +51,461 @@ export default function ChatbotScreen() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [studentID, setStudentID] = useState(0);
 
-    const [isAI, setIsAI] = useState(false);
+    const [isAI, setIsAI] = useState<boolean>(false);
     const [isAgent, setIsAgent] = useState(false);
     const [isAgentAvailable, setIsAgentAvailable] = useState(false);
 
-    const socket = useRef(io(API));
+    // Initialize Socket.IO connection
+    useEffect(() => {
+      socketRef.current = io(API, {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+      });
+
+      socketRef.current.on('connect', () => {
+        console.log('✅ Connected to server:', socketRef.current ? socketRef.current.id : 'unknown');
+      });
+
+      socketRef.current.on('disconnect', () => {
+        console.log('❌ Disconnected from server');
+      });
+
+      socketRef.current.on('connect_error', (error) => {
+        console.error('Connection error:', error);
+      });
+
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+      };
+    }, []);
+
+    // Listen for agent joining
+    useEffect(() => {
+      if (socketRef.current && studentID) {
+        socketRef.current.on('join-agent', (data) => {
+          console.log('🎉 Agent joined the chat:', data);
+          if (data.isAgentAvailable && data.student_id === studentID) {
+            setIsAI(false);
+            setIsAgentAvailable(true);
+            setIsAgent(true);
+
+            addMessage({
+              from: 'bot',
+              text: 'A counselor has joined the chat and will assist you shortly.',
+              mode: 'counselor',
+            });
+          }
+        });
+
+        return () => {
+          if (socketRef.current) {
+            socketRef.current.off('join-agent');
+          }
+        };
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socketRef.current, studentID]);
+
+    // Listen for new chat messages
+    useEffect(() => {
+      if (socketRef.current && studentID) {
+        socketRef.current.on('new-chat-message', (data) => {
+          console.log('📨 Received new-chat-message:', data);
+
+          const { message, is_from_office, student_id } = data;
+
+          // Only process messages for this student
+          if (student_id === studentID) {
+            setMessages((prevMessages) => [
+              ...prevMessages,
+              {
+                from: is_from_office ? 'counselor' : 'user',
+                text: message,
+                mode: is_from_office ? 'counselor' : isAI ? 'chat' : 'faq',
+              },
+            ]);
+
+            setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+          }
+        });
+
+        return () => {
+          if (socketRef.current) {
+            socketRef.current.off('new-chat-message');
+          }
+        };
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [socketRef.current, studentID, isAI]);
+
+    // Join chat room when student ID is available
+    useEffect(() => {
+      if (socketRef.current && studentID && isAgent) {
+        console.log(`🔗 Joining chat room for student ${studentID}`);
+        socketRef.current.emit('join-chat', studentID);
+      }
+    }, [studentID, isAgent]);
 
     useEffect(() => {
-      // Store socket.current in a local variable
-      const currentSocket = socket.current;
+      const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
+        setKeyboardVisible(true);
+      });
+      const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
+        setKeyboardVisible(false);
+      });
 
-      // Listen for real-time updates from the backend
-      currentSocket.on('chat-update', (data) => {
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            from: data.isBot ? 'bot' : 'user',
-            text: data.message,
-            mode: isAgent ? 'counselor' : isAI ? 'chat' : 'faq',
-          },
-        ]);
-        // Automatically scroll to the newest message
+      return () => {
+        showSubscription.remove();
+        hideSubscription.remove();
+      };
+    }, []);
+
+    useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          const token = await AsyncStorage.getItem('userToken');
+          if (!token) {
+            setIsSuccessful(false);
+            setMessageError('User not found. Please try logging in again.');
+            setAlertModal(true);
+            setTimeout(() => navigation.navigate('Login'), 1000);
+            return;
+          }
+          const response = await apiClient.get(`${API}/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.data?.user) {
+            setStudentID(response.data.user.id);
+            if (response.data.user.isAskingHelp && !isAgentAvailable) {
+              setIsAgent(response.data.user.isAskingHelp);
+              setIsAI(true);
+            }
+          } else {
+            setIsSuccessful(false);
+            setMessageError('User not found. Please try logging in again.');
+            setAlertModal(true);
+            setStudentID(0);
+            setIsAI(false);
+            setIsAgent(false);
+          }
+        } catch (error) {
+          setIsSuccessful(false);
+          setMessageError('Server Error: Unable to connect. Please try again.');
+          setAlertModal(true);
+        }
+      };
+      fetchUserData();
+    }, [isAgentAvailable, navigation]);
+
+    useEffect(() => {
+      const keyboardListener = Keyboard.addListener('keyboardDidShow', () => {
         setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
       });
-
-      // Cleanup function to remove event listener when the component is unmounted
-      return () => {
-        currentSocket.off('chat-update');
-      };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+      return () => keyboardListener.remove();
     }, []);
 
     useEffect(() => {
-      // Store socket.current in a local variable
-      const currentSocket = socket.current;
+      const initializeChat = async () => {
+        if (studentID) {
+          try {
+            const response = await axios.get(`${API}/chatbot/get-conversation/${studentID}`);
 
-      // Listen for agent availability (acceptance of chat)
-      currentSocket.on('agent-available', (data) => {
-        // If agent is available, update the states
-        if (data.isAgentAvailable) {
-          setIsAI(false); // Exit AI mode
-          setIsAgentAvailable(true); // Set agent as available
-          setIsAgent(true); // Indicate that the user is now in agent mode
+            const botMessages = response.data.botConversation.map((msg: { is_from_bot: boolean, message: any; created_at: string | number | Date; }) => ({
+              from: msg.is_from_bot ? 'bot' : 'user',
+              text: msg.message,
+              timestamp: new Date(msg.created_at).toLocaleString(),
+              mode: 'faq',
+            }));
+
+            const officeMessages = response.data.officeConversation.map((msg: { is_from_office: boolean, message: any; created_at: string | number | Date; }) => ({
+              from: msg.is_from_office ? 'counselor' : 'user',
+              text: msg.message,
+              timestamp: new Date(msg.created_at).toLocaleString(),
+              mode: 'counselor',
+            }));
+
+            const combinedMessages = [...botMessages, ...officeMessages];
+            combinedMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+            setMessages(combinedMessages);
+
+            if (!isAgent || isAI) {
+                setMessages((prev) => [...prev, {
+                from: 'bot',
+                text: 'Welcome! How can I support your wellbeing today?',
+                mode: 'faq',
+                options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+              }]);
+            }
+
+            setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+
+          } catch (err) {
+            console.error('Error loading conversation:', err);
+            setMessages([{
+              from: 'bot',
+              text: 'Welcome! How can I support your wellbeing today?',
+              mode: 'faq',
+              options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+            }]);
+          }
         }
-      });
-
-      // Cleanup function to remove event listener when the component is unmounted
-      return () => {
-        currentSocket.off('agent-available');
       };
-    }, []);
+      initializeChat();
+    }, [isAI, isAgent, studentID]);
 
-    useEffect(() => {
-    const showSubscription = Keyboard.addListener('keyboardDidShow', () => {
-      setKeyboardVisible(true);
-    });
-    const hideSubscription = Keyboard.addListener('keyboardDidHide', () => {
-      setKeyboardVisible(false);
-    });
-
-    return () => {
-      showSubscription.remove();
-      hideSubscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        if (!token) {
-          setIsSuccessful(false);
-          setMessageError('User not found. Please try logging in again.');
-          setAlertModal(true);
-          setTimeout(() => navigation.navigate('Login'), 1000);
-          return;
-        }
-        const response = await apiClient.get(`${API}/user`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.data?.user) {
-          setStudentID(response.data.user.id);
-          setIsAgent(response.data.user.isAskingHelp);
-          setIsAI(response.data.user.isAskingHelp);
-        } else {
-          setIsSuccessful(false);
-          setMessageError('User not found. Please try logging in again.');
-          setAlertModal(true);
-          setStudentID(0);
-          setIsAI(false);
-          setIsAgent(false);
-        }
-      } catch (error) {
-        setIsSuccessful(false);
-        setMessageError('Server Error: Unable to connect. Please try again.');
-        setAlertModal(true);
-      }
-    };
-    fetchUserData();
-  }, [navigation]);
-
-  useEffect(() => {
-    const keyboardListener = Keyboard.addListener('keyboardDidShow', () => {
+    const addMessage = (msg: Message) => {
+      setMessages((prev) => [...prev, msg]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    });
-    return () => keyboardListener.remove();
-  }, []);
+    };
 
-  useEffect(() => {
-    const initializeChat = async () => {
-      if (studentID) {
+    const handleUserInput = async (text: string) => {
+      if (!text.trim()) { return; }
+
+      try {
+        await axios.post(`${API}/student-activities/insert`, { module: 'Chatbot' });
+      } catch (err) {
+        console.error('Error logging student activity:', err);
+      }
+
+      addMessage({ from: 'user', text, mode: isAgent && isAgentAvailable ? 'counselor' : 'faq' });
+
+      const lastBot = messages.filter((m) => m.from === 'bot').slice(-1)[0];
+
+      // If chatting with live agent
+      if (isAgent && !isAI) {
         try {
-          // Fetch both chatbot and office chat history
-          const response = await axios.get(`${API}/chatbot/get-conversation/${studentID}`);
+          await axios.post(`${API}/chatbot/insert-chat-message`, {
+            student_id: studentID,
+            message: text,
+            is_from_office: false,
+          });
 
-          const botMessages = response.data.botConversation.map((msg: { message: any; created_at: string | number | Date; }) => ({
-            sender: 'bot', // Marking sender as bot for chatbot history
-            text: msg.message,
-            timestamp: new Date(msg.created_at).toLocaleString(),
-            mode: 'faq',
-          }));
+          console.log('Message sent to agent');
+        } catch (error) {
+          console.error('Error sending message to agent:', error);
+        }
+        return;
+      }
 
-          const officeMessages = response.data.officeConversation.map((msg: { message: any; created_at: string | number | Date; }) => ({
-            sender: 'office', // Marking sender as office for office chat history
-            text: msg.message,
-            timestamp: new Date(msg.created_at).toLocaleString(),
-            mode: 'chat',
-          }));
-
-          // Combine the messages
-          const combinedMessages = [...botMessages, ...officeMessages];
-
-          // Sort the messages by timestamp (ascending order)
-          combinedMessages.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-
-          // Set the sorted messages to state
-          setMessages(combinedMessages);
-
-          // Scroll to bottom after setting messages
-          setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-
-        } catch (err) {
-          console.error('Error loading conversation:', err);
-          // Fallback to welcome message
-          setMessages([{
+      // If in AI mode
+      if (isAI) {
+        if (text.toLowerCase() === 'exit') {
+          setIsAI(false);
+          addMessage({
             from: 'bot',
-            text: 'Welcome! How can I support your wellbeing today?',
+            text: 'You have exited AI chat. How can I assist you further?',
             mode: 'faq',
             options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-          }]);
+          });
+          return;
+        }
+
+        try {
+          const response = await axios.post(`${API}/chatbot/send-message`, {
+            message: text,
+            userId: studentID,
+          });
+          addMessage({ from: 'bot', text: response.data.fulfillmentText, mode: 'faq' });
+        } catch (err) {
+          console.error('Error sending message to the backend:', err);
+        }
+
+        return;
+      }
+
+      const currentMenuOptions = lastBot?.options || [];
+      const isInMainMenu = currentMenuOptions.some((opt) => MAIN_MENU.includes(opt));
+      const hasMenuOptions = currentMenuOptions.length > 0;
+
+      if (MAIN_MENU.includes(text)) {
+        if (FAQ_TREE[text]) {
+          addMessage({
+            from: 'bot',
+            text: FAQ_TREE[text].intro,
+            mode: 'faq',
+            options: Object.keys(FAQ_TREE[text].questions),
+            topic: text,
+          });
+          return;
         }
       }
-    };
 
-    if (studentID && isFocused) {
-      initializeChat();
-    }
-  }, [studentID, isFocused, isAgent, isAI]);
+      if (isInMainMenu && hasMenuOptions) {
+        const bestMatch = stringSimilarity.findBestMatch(text, MAIN_MENU);
+        if (bestMatch.bestMatch.rating >= 0.6) {
+          if (bestMatch.bestMatch.target !== text) {
+            handleUserInput(bestMatch.bestMatch.target);
+            return;
+          }
+        }
+      }
 
-  // Add a message
-  const addMessage = (msg: Message) => {
-    setMessages((prev) => [...prev, msg]);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-  };
+      if (text === '💬 Chat with me') {
+        addMessage({
+          from: 'bot',
+          text: 'Sure! Type your question and I\'ll do my best to help. 😊',
+          mode: 'chat',
+        });
+        setIsAI(true);
+        return;
+      }
 
-  const handleUserInput = async (text: string) => {
-  if (!text.trim()) { return; }
+      if (text === '👨‍🏫 Talk to a guidance counselor') {
+        addMessage({
+          from: 'bot',
+          text: 'Connecting you to a guidance counselor...',
+          mode: 'counselor',
+        });
 
-  // Log student activity for the Wellness module
-  try {
-    await axios.post(`${API}/student-activities/insert`, { module: 'Chatbot' });
-  } catch (err) {
-    console.error('Error logging student activity:', err);
-  }
+        setIsAgent(true);
 
-  // Always add the raw user input to chat
-  addMessage({ from: 'user', text, mode: 'faq' });
+        try {
+          const response = await axios.put(`${API}/chatbot/get-help/${studentID}`);
 
-  const lastBot = messages.filter((m) => m.from === 'bot').slice(-1)[0];
+          if (response.data.success) {
+            // Join the chat room
+            if (socketRef.current) {
+              socketRef.current.emit('join-chat', studentID);
+            }
 
-  // ================================
-  // Step 1: Check if in AI mode
-  // ================================
-  if (isAI) {
-    // If user types "exit", stop chatting with AI and bring up the menu again
-    if (text.toLowerCase() === 'exit' && !isAgent) {
-      setIsAI(false); // Exit AI mode
+            addMessage({
+              from: 'bot',
+              text: 'A counselor will be with you shortly. You can continue chatting while waiting.',
+              mode: 'counselor',
+            });
+          } else {
+            addMessage({
+              from: 'bot',
+              text: 'Sorry, something went wrong while connecting you to the counselor. Please try again later.',
+              mode: 'counselor',
+            });
+          }
+        } catch (error) {
+          console.error('Error while connecting to counselor:', error);
+          addMessage({
+            from: 'bot',
+            text: 'Oops! Something went wrong while connecting to the counselor. Please try again later.',
+            mode: 'counselor',
+          });
+        }
+
+        return;
+      }
+
+      if (MAIN_MENU.includes(text)) {
+        const introText = FAQ_TREE[text]?.intro;
+        const options = Object.keys(FAQ_TREE[text]?.questions || {});
+
+        addMessage({
+          from: 'bot',
+          text: introText || 'I am here to help! Please choose a question below.',
+          mode: 'faq',
+          options: options,
+          topic: text,
+        });
+        return;
+      }
+
+      if (lastBot?.topic && FAQ_TREE[lastBot.topic]?.questions[text]) {
+        const answer = FAQ_TREE[lastBot.topic].questions[text];
+        const remaining = Object.keys(FAQ_TREE[lastBot.topic].questions).filter(
+          (q) => q !== text
+        );
+
+        addMessage({
+          from: 'bot',
+          text: answer,
+          mode: 'faq',
+          options: [
+            ...(remaining.length > 0 ? [`🔁 Ask another question about ${lastBot.topic}`] : []),
+            '📚 Explore a different wellness topic',
+            '👋 End the conversation',
+          ],
+          topic: lastBot.topic,
+          lastQ: text,
+        });
+        return;
+      }
+
+      if (text.startsWith('🔁 Ask another question about')) {
+        const topic = messages.filter((m) => m.topic).slice(-1)[0]?.topic;
+        if (topic) {
+          const lastQ = messages.filter((m) => m.lastQ).slice(-1)[0]?.lastQ;
+          const remaining = Object.keys(FAQ_TREE[topic].questions).filter(
+            (q) => q !== lastQ
+          );
+          addMessage({
+            from: 'bot',
+            text: 'Sure! Here are your choices again:',
+            mode: 'faq',
+            options: remaining,
+            topic,
+          });
+        }
+        return;
+      }
+
+      if (text === '📚 Explore a different wellness topic') {
+        addMessage({
+          from: 'bot',
+          text: 'No problem! Let\'s go back to the main menu. Please choose a new topic below:',
+          mode: 'faq',
+          options: MAIN_MENU,
+        });
+        return;
+      }
+
+      if (text === '👋 End the conversation') {
+        addMessage({
+          from: 'bot',
+          text: 'Thanks for chatting with me! 🌟 Come back anytime.',
+          mode: 'faq',
+        });
+        setTimeout(() => {
+          if (isFocused) {
+            setMessages([
+              {
+                from: 'bot',
+                text: MAIN_MENU_PROMPT,
+                mode: 'faq',
+                options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+              },
+            ]);
+            setIsAI(false);
+            setIsAgent(false);
+          }
+        }, 2000);
+        return;
+      }
+
       addMessage({
         from: 'bot',
-        text: 'You have exited AI chat. How can I assist you further?',
+        text: 'I didn\'t catch that. Try picking a wellness topic or ask for a live agent.',
         mode: 'faq',
         options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
       });
-      return;
-    }
-
-    // Continue the conversation with the AI without any further checks
-    try {
-      const response = await axios.post(`${API}/chatbot/send-message`, {
-        message: text,
-        userId: studentID,
-      });
-      addMessage({ from: 'bot', text: response.data.fulfillmentText, mode: 'faq' });
-    } catch (err) {
-      console.error('Error sending message to the backend:', err);
-    }
-
-    return;
-  }
-
-  if (isAgentAvailable) {
-    // Insert the student's message into the office chat (from the student)
-    try {
-      const studentMessage = text; // The message entered by the student
-      await axios.post(`${API}/chatbot/insert-chat-message`, {
-        student_id: studentID,
-        message: studentMessage,
-        is_from_office: false, // Indicate that it's from the student (not the office)
-      });
-
-      // Emit event to notify clients about the new chat message
-      if (socket.current) {
-        socket.current.emit('new-chat-message', {
-          student_id: studentID,
-          message: studentMessage,
-          is_from_office: false, // Indicating the message is from the student
-        });
-      }
-
-      // Add the student's message to the chat
-      addMessage({
-        from: 'user', // Message is from the student (user)
-        text: studentMessage,
-        mode: 'chat',
-      });
-
-    } catch (error) {
-      console.error('Error inserting student chat message:', error);
-    }
-  }
-
-  // ================================
-  // Step 2: If in Main Menu, process the user input to go to the right topic
-  // ================================
-  const currentMenuOptions = lastBot?.options || [];
-  const isInMainMenu = currentMenuOptions.some((opt) => MAIN_MENU.includes(opt));
-  const hasMenuOptions = currentMenuOptions.length > 0;
-
-  // Check for exact menu matches first
-  if (MAIN_MENU.includes(text)) {
-    // Direct FAQ topic selection
-    if (FAQ_TREE[text]) {
-      addMessage({
-        from: 'bot',
-        text: FAQ_TREE[text].intro,
-        mode: 'faq',
-        options: Object.keys(FAQ_TREE[text].questions),
-        topic: text,
-      });
-      return;
-    }
-  }
-
-  // Then check for string similarity if we're clearly in a menu context
-  if (isInMainMenu && hasMenuOptions) {
-    const bestMatch = stringSimilarity.findBestMatch(text, MAIN_MENU);
-    if (bestMatch.bestMatch.rating >= 0.6) {
-      if (bestMatch.bestMatch.target !== text) {
-        handleUserInput(bestMatch.bestMatch.target); // Act like user tapped it
-        return;
-      }
-    }
-  }
-
-  // ================================
-  // Step 3: Special cases
-  // ================================
-
-  if (text === '💬 Chat with me') {
-    addMessage({
-      from: 'bot',
-      text: 'Sure! Type your question and I’ll do my best to help. 😊',
-      mode: 'chat',
-    });
-    setIsAI(true);
-    return;
-  }
-
-  if (text === '👨‍🏫 Talk to a guidance counselor') {
-    addMessage({
-      from: 'bot',
-      text: 'Connecting you to a guidance counselor...',
-      mode: 'counselor',
-    });
-
-    // Set isAgent to true to indicate the switch to the agent
-    setIsAgent(true);
-
-    try {
-      // Make the API call to initiate the help request
-      const response = await axios.put(`${API}/chatbot/get-help/${studentID}`);
-
-      // Check if the API call was successful
-      if (response.data.success) {
-        // Handle successful response if needed
-        addMessage({
-          from: 'bot',
-          text: 'A counselor will be with you shortly. For while you can chat with bot while waiting for counselor to reply.',
-          mode: 'counselor',
-        });
-      } else {
-        // Handle failure in API call (if applicable)
-        addMessage({
-          from: 'bot',
-          text: 'Sorry, something went wrong while connecting you to the counselor. Please try again later.',
-          mode: 'counselor',
-        });
-      }
-    } catch (error) {
-      // Handle error during API call (e.g., network issues)
-      console.error('Error while connecting to counselor:', error);
-      addMessage({
-        from: 'bot',
-        text: 'Oops! Something went wrong while connecting to the counselor. Please try again later.',
-        mode: 'counselor',
-      });
-    }
-
-    return;
-  }
-
-  // ================================
-  // Step 4: Handle when the user picks a topic from the main menu
-  // ================================
-  if (MAIN_MENU.includes(text)) {
-    const introText = FAQ_TREE[text]?.intro;
-    const options = Object.keys(FAQ_TREE[text]?.questions || {});
-
-    addMessage({
-      from: 'bot',
-      text: introText || 'I am here to help! Please choose a question below.',
-      mode: 'faq',
-      options: options,
-      topic: text,
-    });
-    return;
-  }
-
-  // ================================
-  // Step 5: Handle FAQ question selection
-  // ================================
-  if (lastBot?.topic && FAQ_TREE[lastBot.topic]?.questions[text]) {
-    const answer = FAQ_TREE[lastBot.topic].questions[text];
-    const remaining = Object.keys(FAQ_TREE[lastBot.topic].questions).filter(
-      (q) => q !== text
-    );
-
-    addMessage({
-      from: 'bot',
-      text: answer,
-      mode: 'faq',
-      options: [
-        ...(remaining.length > 0 ? [`🔁 Ask another question about ${lastBot.topic}`] : []),
-        '📚 Explore a different wellness topic',
-        '👋 End the conversation',
-      ],
-      topic: lastBot.topic,
-      lastQ: text,
-    });
-    return;
-  }
-
-  // ================================
-  // Step 6: Handle follow-up options
-  // ================================
-  if (text.startsWith('🔁 Ask another question about')) {
-    const topic = messages.filter((m) => m.topic).slice(-1)[0]?.topic;
-    if (topic) {
-      const lastQ = messages.filter((m) => m.lastQ).slice(-1)[0]?.lastQ;
-      const remaining = Object.keys(FAQ_TREE[topic].questions).filter(
-        (q) => q !== lastQ
-      );
-      addMessage({
-        from: 'bot',
-        text: 'Sure! Here are your choices again:',
-        mode: 'faq',
-        options: remaining,
-        topic,
-      });
-    }
-    return;
-  }
-
-  if (text === '📚 Explore a different wellness topic') {
-    addMessage({
-      from: 'bot',
-      text: 'No problem! Let’s go back to the main menu. Please choose a new topic below:',
-      mode: 'faq',
-      options: MAIN_MENU,
-    });
-    return;
-  }
-
-  if (text === '👋 End the conversation') {
-    addMessage({
-      from: 'bot',
-      text: 'Thanks for chatting with me! 🌟 Come back anytime.',
-      mode: 'faq',
-    });
-    setTimeout(() => {
-      // After a short delay, reset messages and show the main menu
-      if (isFocused) {
-        setMessages([ // Reset the conversation
-          {
-            from: 'bot',
-            text: MAIN_MENU_PROMPT, // Welcome message
-            mode: 'faq',
-            options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-          },
-        ]);
-        setIsAI(false); // Reset AI state
-        setIsAgent(false); // Reset agent state
-      }
-    }, 2000); // Adjust the timeout as needed to make the transition smooth
-    return;
-  }
-
-  // ================================
-  // Step 7: Fallback (unrecognized input)
-  // ================================
-  addMessage({
-    from: 'bot',
-    text: 'I didn’t catch that. Try picking a wellness topic or ask for a live agent.',
-    mode: 'faq',
-    options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-  });
-};
-
-  useEffect(() => {
-    const currentSocket = socket.current;
-
-    // Listen for new chat messages from both students and agents
-    currentSocket.on('new-chat-message', (data) => {
-      const { message, is_from_office } = data;
-
-      // Update the state based on the sender
-      setMessages((prevMessages) => [
-        ...prevMessages,
-        {
-          from: is_from_office ? 'counselor' : 'user', // Use 'counselor' instead of 'office'
-          text: message,
-          mode: is_from_office ? 'counselor' : 'faq', // Use 'counselor' mode for office messages
-        },
-      ]);
-
-      // Scroll to the latest message
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    });
-
-    // Cleanup function to remove event listener when the component is unmounted
-    return () => {
-      currentSocket.off('new-chat-message');
     };
-  }, [socket, messages]); // Listen for socket changes and messages
-
 
   return (
     <KeyboardAvoidingView style={styles.flex1} behavior="height" keyboardVerticalOffset={20}>
       <View style={styles.screen}>
         <DrawerComponent Initial={'Chatbot'} />
 
-        {/* Title */}
         <View style={styles.container}>
           <View style={styles.titleBox}>
             <Text style={styles.title}>Chatbot</Text>
           </View>
         </View>
 
-        {/* Chat area */}
         <ScrollView
           ref={scrollRef}
           keyboardShouldPersistTaps="handled"
-          // eslint-disable-next-line react-native/no-inline-styles
           contentContainerStyle={{ paddingBottom: 40 }}
-          // eslint-disable-next-line react-native/no-inline-styles
           style={[styles.chatbotContainer, keyboardVisible && { maxHeight: '65%' }]}
         >
           {messages.map((msg, idx) => (
@@ -555,13 +528,11 @@ export default function ChatbotScreen() {
                 )}
                 <View style={styles.chatWidth}>
                   <Text style={styles.chatbotText}>{msg.text}</Text>
-                  {/* Show options */}
                   {msg.options?.map((opt, i) => (
                     <TouchableOpacity
                       key={i}
                       style={styles.optionBtn}
                       onPress={() => handleUserInput(opt)}
-                      // disabled={isAI || isAgent}
                     >
                       <Text style={styles.optionText}>{opt}</Text>
                     </TouchableOpacity>
@@ -570,19 +541,23 @@ export default function ChatbotScreen() {
               </View>
             </View>
           ))}
-          {/* AI Mode Indicator - styled to match the chat design */}
-          {(isAI && !isAgent ) && (
+          {(isAI && !isAgentAvailable) && (
             <View style={styles.aiIndicatorContainer}>
               <Text style={styles.aiIndicatorText}>
                 💬 You are chatting with AI • Type "exit" to return to menu
               </Text>
             </View>
           )}
+          {(isAgent && isAgentAvailable) && (
+            <View style={[styles.aiIndicatorContainer, {backgroundColor: '#e8f5e9', borderColor: '#81c784'}]}>
+              <Text style={[styles.aiIndicatorText, {color: '#2e7d32'}]}>
+                👨‍🏫 Connected with guidance counselor
+              </Text>
+            </View>
+          )}
         </ScrollView>
 
-        {/* Input */}
         <TextInput
-          // eslint-disable-next-line react-native/no-inline-styles
           style={[styles.input, { bottom: keyboardVisible ? '2%' : '7%' }]}
           placeholder="Type Here"
           value={input}
@@ -594,7 +569,6 @@ export default function ChatbotScreen() {
           }}
         />
 
-        {/* Error Modal */}
         <Modal visible={alertModal} animationType="fade" transparent>
           <View style={styles.overlay}>
             <View style={styles.forgotModal}>
@@ -760,22 +734,21 @@ const styles = StyleSheet.create({
   chatWidth: {width: '65%', marginBottom: 10},
   userChatAlign: {flex: 1, alignItems: 'flex-end', paddingHorizontal: 10},
   userPictureAlign: {flexDirection: 'row-reverse', gap: 10},
-  userChatText: {color: 'black', fontFamily: 'Lora-Bold', textAlignVertical: 'center', fontSize: 10, borderWidth: 1, borderColor: '#b7e3cc', padding: 5, textAlign: 'right', borderRadius: 10},
   botChatAlign: { flex: 1, alignItems: 'flex-start', paddingHorizontal: 10 },
   botPictureAlign: {flexDirection: 'row', gap: 10},
   aiIndicatorContainer: {
-  backgroundColor: '#e3f2fd', // Light blue background
-  borderWidth: 1,
-  borderColor: '#90caf9', // Blue border
-  borderRadius: 8,
-  paddingVertical: 6,
-  paddingHorizontal: 8,
-  marginBottom: 8,
-  marginTop: 2,
+    backgroundColor: '#e3f2fd',
+    borderWidth: 1,
+    borderColor: '#90caf9',
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    marginBottom: 8,
+    marginTop: 2,
   },
   aiIndicatorText: {
     fontSize: 9,
-    color: '#1565c0', // Dark blue text
+    color: '#1565c0',
     fontFamily: 'Poppins-MediumItalic',
     textAlign: 'center',
   },
