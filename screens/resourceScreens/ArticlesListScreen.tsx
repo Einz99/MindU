@@ -220,7 +220,9 @@ export default function ArticleList() {
                     </Text>
                     <Text style={styles.articleAuthor}>By Guidance Office</Text>
                     <Image
-                      source={{ uri: `${RootAPI}${article.banner}` }}
+                      source={{
+                        uri: article.banner ? `${RootAPI}${article.banner}` : require('../../assets/images/MUIcon.png'), // Default image if banner is unavailable
+                      }}
                       resizeMode="contain"
                       style={styles.articleImage}
                     />

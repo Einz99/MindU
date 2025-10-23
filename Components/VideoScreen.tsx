@@ -112,7 +112,9 @@ export default function VideoScreen({
                       <View style={styles.box}>
                         <View style={styles.VideoBanner}>
                             <Image
-                                source={{ uri: `${RootAPI}${resource.banner}` }}
+                                source={{
+                                    uri: resource.banner ? `${RootAPI}${resource.banner}` : require('../../assets/images/MUIcon.png'),
+                                  }}
                                 style={styles.VideoImage}
                                 resizeMode="stretch"
                             />

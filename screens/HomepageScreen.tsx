@@ -278,10 +278,10 @@ export default function HomepageScreen() {
               <Text style={styles.Label}>Name</Text>
               <TextInput
                   value={name}
-                  onChangeText={setName}
                   placeholder="Enter name"
                   placeholderTextColor="#888"
                   style={styles.input}
+                  readOnly={true}
               />
               <Text style={styles.Label}>Message</Text>
               <TextInput

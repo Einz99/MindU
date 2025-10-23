@@ -55,6 +55,8 @@ export default function ChatbotScreen() {
     const [isAgent, setIsAgent] = useState(false);
     const [isAgentAvailable, setIsAgentAvailable] = useState(false);
 
+    const [lastMessageTime, setLastMessageTime] = useState<Date | null>(null);
+
     useEffect(() => {
       const fetchUserData = async () => {
         try {
@@ -156,6 +158,8 @@ export default function ChatbotScreen() {
             setIsAI(false);
             setIsAgentAvailable(false);
             setIsAgent(false);
+
+            addMessage({from: 'bot', text: 'Your Session With Guidance Office ended', mode: 'faq'});
 
             setMessages((prev) => [...prev, {
               from: 'bot',
@@ -302,267 +306,368 @@ export default function ChatbotScreen() {
           } catch (err) {
             console.error('Error loading conversation:', err);
             setMessages([{
-              from: 'bot',
-              text: 'Welcome! How can I support your wellbeing today?',
-              mode: 'faq',
-              options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-            }]);
-          }
+                from: 'bot',
+                text: 'Welcome! How can I support your wellbeing today?',
+                mode: 'faq',
+                options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+              }]);
+            }
         }
       };
       initializeChat();
     }, [isAI, isAgent, studentID]);
 
-    const addMessage = (msg: Message) => {
-      setMessages((prev) => [...prev, msg]);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    };
+  const addMessage = (msg: Message) => {
+    setMessages((prev) => [...prev, msg]);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+  };
 
-    const handleUserInput = async (text: string) => {
-      if (!text.trim()) { return; }
+  useEffect(() => {
+    setLastMessageTime(new Date());
+  }, [messages]);
+
+  useEffect(() => {
+    if (isAgent && !isAI) {
+      // If an agent is active and chatting, start the inactivity timer
+      if (lastMessageTime) {
+        const timeout = setTimeout(() => {
+          const timeElapsed = new Date().getTime() - lastMessageTime.getTime();
+          if (timeElapsed >= 180000) { // 3 minutes in milliseconds
+            // If 3 minutes have passed with no activity, disconnect
+            setIsAgent(false);
+            setIsAgentAvailable(false);
+            setIsAI(false);
+            addMessage({ from: 'bot', text: 'You have been disconnected due to inactivity.', mode: 'faq' });
+            console.log('Disconnected due to inactivity');
+          }
+        }, 180000); // Check after 3 minutes
+
+        // Clear the timer on cleanup or when messages are added
+        return () => {
+          if (timeout) {
+            clearTimeout(timeout);
+          }
+        };
+      }
+    }
+  }, [lastMessageTime, isAgent, isAI]);
+
+  // Handle user input and manage interaction flow
+  const handleUserInput = async (text: string) => {
+    if (!text.trim()) { return; }
+
+    try {
+      await axios.post(`${API}/student-activities/insert`, { module: 'Chatbot' });
+    } catch (err) {
+      console.error('Error logging student activity:', err);
+    }
+
+    const lastBot = messages.filter((m) => m.from === 'bot').slice(-1)[0];
+
+    // If chatting with live agent
+    if (isAgent && !isAI) {
+      if (text.toLowerCase() === 'exit') {
+        setIsAI(false);
+        setIsAgentAvailable(false);
+        setIsAgent(false);
+        try {
+          await axios.post(`${API}/chatbot/deactivateStatus/${studentID}`);
+        } catch (error) {
+          console.error('Error changing status');
+        }
+
+        setMessages((prev) => [...prev, {
+          from: 'bot',
+          text: 'Welcome! How can I support your wellbeing today?',
+          mode: 'faq',
+          options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+        }]);
+        return;
+      }
 
       try {
-        await axios.post(`${API}/student-activities/insert`, { module: 'Chatbot' });
-      } catch (err) {
-        console.error('Error logging student activity:', err);
-      }
-
-      const lastBot = messages.filter((m) => m.from === 'bot').slice(-1)[0];
-
-      // If chatting with live agent
-      if (isAgent && !isAI) {
-        if (text.toLowerCase() === 'exit') {
-          setIsAI(false);
-          setIsAgentAvailable(false);
-          setIsAgent(false);
-          try {
-            await axios.post(`${API}/chatbot/deactivateStatus/${studentID}`);
-          } catch (error) {
-            console.error('Error changing status');
-          }
-
-          setMessages((prev) => [...prev, {
-            from: 'bot',
-            text: 'Welcome! How can I support your wellbeing today?',
-            mode: 'faq',
-            options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-          }]);
-          return;
-        }
-
-        try {
-          await axios.post(`${API}/chatbot/insert-chat-message`, {
-            student_id: studentID,
-            message: text,
-            is_from_office: false,
-          });
-
-          console.log('Message sent to agent');
-        } catch (error) {
-          console.error('Error sending message to agent:', error);
-        }
-        return;
-      }
-
-      // If in AI mode
-      if (isAI) {
-        if (text.toLowerCase() === 'exit') {
-          setIsAI(false);
-          addMessage({
-            from: 'bot',
-            text: 'You have exited AI chat. How can I assist you further?',
-            mode: 'faq',
-            options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-          });
-          return;
-        }
-
-        try {
-          const response = await axios.post(`${API}/chatbot/send-message`, {
-            message: text,
-            userId: studentID,
-          });
-          addMessage({ from: 'bot', text: response.data.fulfillmentText, mode: 'faq' });
-        } catch (err) {
-          console.error('Error sending message to the backend:', err);
-        }
-
-        return;
-      }
-
-      const currentMenuOptions = lastBot?.options || [];
-      const isInMainMenu = currentMenuOptions.some((opt) => MAIN_MENU.includes(opt));
-      const hasMenuOptions = currentMenuOptions.length > 0;
-
-      if (MAIN_MENU.includes(text)) {
-        if (FAQ_TREE[text]) {
-          addMessage({
-            from: 'bot',
-            text: FAQ_TREE[text].intro,
-            mode: 'faq',
-            options: Object.keys(FAQ_TREE[text].questions),
-            topic: text,
-          });
-          return;
-        }
-      }
-
-      if (isInMainMenu && hasMenuOptions) {
-        const bestMatch = stringSimilarity.findBestMatch(text, MAIN_MENU);
-        if (bestMatch.bestMatch.rating >= 0.6) {
-          if (bestMatch.bestMatch.target !== text) {
-            handleUserInput(bestMatch.bestMatch.target);
-            return;
-          }
-        }
-      }
-
-      if (text === '💬 Chat with me') {
-        addMessage({
-          from: 'bot',
-          text: 'Sure! Type your question and I\'ll do my best to help. 😊',
-          mode: 'chat',
-        });
-        setIsAI(true);
-        return;
-      }
-
-      if (text === '👨‍🏫 Talk to a guidance counselor') {
-        addMessage({
-          from: 'bot',
-          text: 'Connecting you to a guidance counselor...',
-          mode: 'counselor',
+        await axios.post(`${API}/chatbot/insert-chat-message`, {
+          student_id: studentID,
+          message: text,
+          is_from_office: false,
         });
 
-        setIsAgent(true);
+        console.log('Message sent to agent');
+      } catch (error) {
+        console.error('Error sending message to agent:', error);
+      }
+      return;
+    }
 
-        try {
-          const response = await axios.put(`${API}/chatbot/get-help/${studentID}`);
+    // If in AI mode and user wants to talk to a counselor
+    if (isAI && text.toLowerCase().includes('talk to a guidance counselor')) {
+      // Remove the AI chat and options message
+      setMessages((prevMessages) => prevMessages.filter(msg => !msg.options));
 
-          if (response.data.success) {
-            // Join the chat room
-            if (socketRef.current) {
-              socketRef.current.emit('join-chat', studentID);
-            }
+      // Add a message indicating the redirection
+      addMessage({
+        from: 'bot',
+        text: 'Connecting you to a guidance counselor...',
+        mode: 'counselor',
+      });
 
-            addMessage({
-              from: 'bot',
-              text: 'A counselor will be with you shortly. You can continue chatting while waiting.',
-              mode: 'counselor',
-            });
-          } else {
-            addMessage({
-              from: 'bot',
-              text: 'Sorry, something went wrong while connecting you to the counselor. Please try again later.',
-              mode: 'counselor',
-            });
+      setIsAgent(true);
+      setIsAI(false);  // Disable AI mode
+
+      // Set isAgentAvailable to false since the student is waiting for a counselor
+      setIsAgentAvailable(false); // <-- Indicate the student is waiting for the counselor
+
+      // Call the backend to handle the redirection to counselor
+      try {
+        const response = await axios.put(`${API}/chatbot/get-help/${studentID}`);
+
+        if (response.data.success) {
+          // Join the chat room
+          if (socketRef.current) {
+            socketRef.current.emit('join-chat', studentID);
           }
-        } catch (error) {
-          console.error('Error while connecting to counselor:', error);
+
           addMessage({
             from: 'bot',
-            text: 'Oops! Something went wrong while connecting to the counselor. Please try again later.',
+            text: 'A counselor will be with you shortly. You can continue chatting while waiting.',
+            mode: 'counselor',
+          });
+        } else {
+          addMessage({
+            from: 'bot',
+            text: 'Sorry, something went wrong while connecting you to the counselor. Please try again later.',
             mode: 'counselor',
           });
         }
+      } catch (error) {
+        console.error('Error while connecting to counselor:', error);
+        addMessage({
+          from: 'bot',
+          text: 'Oops! Something went wrong while connecting to the counselor. Please try again later.',
+          mode: 'counselor',
+        });
+      }
 
+      return;
+    }
+
+    // If in AI mode and waiting for counselor, allow chatting with bot
+    if (isAI && !isAgentAvailable) {
+      try {
+        const response = await axios.post(`${API}/chatbot/send-message`, {
+          message: text,
+          userId: studentID,
+        });
+        addMessage({ from: 'bot', text: response.data.fulfillmentText, mode: 'faq' });
+      } catch (err) {
+        console.error('Error sending message to the backend:', err);
+      }
+
+      return;
+    }
+
+    // If in AI mode
+    if (isAI) {
+      if (text.toLowerCase() === 'exit') {
+        setIsAI(false);
+        addMessage({
+          from: 'bot',
+          text: 'You have exited AI chat. How can I assist you further?',
+          mode: 'faq',
+          options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+        });
         return;
       }
 
-      if (MAIN_MENU.includes(text)) {
-        const introText = FAQ_TREE[text]?.intro;
-        const options = Object.keys(FAQ_TREE[text]?.questions || {});
+      try {
+        const response = await axios.post(`${API}/chatbot/send-message`, {
+          message: text,
+          userId: studentID,
+        });
+        addMessage({ from: 'bot', text: response.data.fulfillmentText, mode: 'faq' });
+      } catch (err) {
+        console.error('Error sending message to the backend:', err);
+      }
 
+      return;
+    }
+
+    const currentMenuOptions = lastBot?.options || [];
+    const isInMainMenu = currentMenuOptions.some((opt) => MAIN_MENU.includes(opt));
+    const hasMenuOptions = currentMenuOptions.length > 0;
+
+    if (MAIN_MENU.includes(text)) {
+      if (FAQ_TREE[text]) {
         addMessage({
           from: 'bot',
-          text: introText || 'I am here to help! Please choose a question below.',
+          text: FAQ_TREE[text].intro,
           mode: 'faq',
-          options: options,
+          options: Object.keys(FAQ_TREE[text].questions),
           topic: text,
         });
         return;
       }
+    }
 
-      if (lastBot?.topic && FAQ_TREE[lastBot.topic]?.questions[text]) {
-        const answer = FAQ_TREE[lastBot.topic].questions[text];
-        const remaining = Object.keys(FAQ_TREE[lastBot.topic].questions).filter(
-          (q) => q !== text
-        );
-
-        addMessage({
-          from: 'bot',
-          text: answer,
-          mode: 'faq',
-          options: [
-            ...(remaining.length > 0 ? [`🔁 Ask another question about ${lastBot.topic}`] : []),
-            '📚 Explore a different wellness topic',
-            '👋 End the conversation',
-          ],
-          topic: lastBot.topic,
-          lastQ: text,
-        });
-        return;
+    if (isInMainMenu && hasMenuOptions) {
+      const bestMatch = stringSimilarity.findBestMatch(text, MAIN_MENU);
+      if (bestMatch.bestMatch.rating >= 0.6) {
+        if (bestMatch.bestMatch.target !== text) {
+          handleUserInput(bestMatch.bestMatch.target);
+          return;
+        }
       }
+    }
 
-      if (text.startsWith('🔁 Ask another question about')) {
-        const topic = messages.filter((m) => m.topic).slice(-1)[0]?.topic;
-        if (topic) {
-          const lastQ = messages.filter((m) => m.lastQ).slice(-1)[0]?.lastQ;
-          const remaining = Object.keys(FAQ_TREE[topic].questions).filter(
-            (q) => q !== lastQ
-          );
+    if (text === '💬 Chat with me') {
+      setMessages((prevMessages) => prevMessages.filter(msg => !msg.options));
+      addMessage({
+        from: 'bot',
+        text: 'Sure! Type your question and I\'ll do my best to help. 😊',
+        mode: 'chat',
+      });
+      setIsAI(true);
+      return;
+    }
+
+    if (text === '👨‍🏫 Talk to a guidance counselor') {
+      setMessages((prevMessages) => prevMessages.filter(msg => !msg.options));
+      addMessage({
+        from: 'bot',
+        text: 'Connecting you to a guidance counselor...',
+        mode: 'counselor',
+      });
+
+      setIsAgent(true);
+
+      try {
+        const response = await axios.put(`${API}/chatbot/get-help/${studentID}`);
+
+        if (response.data.success) {
+          // Join the chat room
+          if (socketRef.current) {
+            socketRef.current.emit('join-chat', studentID);
+          }
+
           addMessage({
             from: 'bot',
-            text: 'Sure! Here are your choices again:',
-            mode: 'faq',
-            options: remaining,
-            topic,
+            text: 'A counselor will be with you shortly. You can continue chatting while waiting.',
+            mode: 'counselor',
+          });
+        } else {
+          addMessage({
+            from: 'bot',
+            text: 'Sorry, something went wrong while connecting to the counselor. Please try again later.',
+            mode: 'counselor',
           });
         }
-        return;
-      }
-
-      if (text === '📚 Explore a different wellness topic') {
+      } catch (error) {
+        console.error('Error while connecting to counselor:', error);
         addMessage({
           from: 'bot',
-          text: 'No problem! Let\'s go back to the main menu. Please choose a new topic below:',
-          mode: 'faq',
-          options: MAIN_MENU,
+          text: 'Oops! Something went wrong while connecting to the counselor. Please try again later.',
+          mode: 'counselor',
         });
-        return;
       }
 
-      if (text === '👋 End the conversation') {
-        addMessage({
-          from: 'bot',
-          text: 'Thanks for chatting with me! 🌟 Come back anytime.',
-          mode: 'faq',
-        });
-        setTimeout(() => {
-          if (isFocused) {
-            setMessages([
-              {
-                from: 'bot',
-                text: MAIN_MENU_PROMPT,
-                mode: 'faq',
-                options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-              },
-            ]);
-            setIsAI(false);
-            setIsAgent(false);
-            setIsAgentAvailable(false);
-          }
-        }, 2000);
-        return;
-      }
+      return;
+    }
+
+    if (MAIN_MENU.includes(text)) {
+      const introText = FAQ_TREE[text]?.intro;
+      const options = Object.keys(FAQ_TREE[text]?.questions || {});
 
       addMessage({
         from: 'bot',
-        text: 'I didn\'t catch that. Try picking a wellness topic or ask for a live agent.',
+        text: introText || 'I am here to help! Please choose a question below.',
         mode: 'faq',
-        options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+        options: options,
+        topic: text,
       });
-    };
+      return;
+    }
+
+    if (lastBot?.topic && FAQ_TREE[lastBot.topic]?.questions[text]) {
+      const answer = FAQ_TREE[lastBot.topic].questions[text];
+      const remaining = Object.keys(FAQ_TREE[lastBot.topic].questions).filter(
+        (q) => q !== text
+      );
+
+      addMessage({
+        from: 'bot',
+        text: answer,
+        mode: 'faq',
+        options: [
+          ...(remaining.length > 0 ? [`🔁 Ask another question about ${lastBot.topic}`] : []),
+          '📚 Explore a different wellness topic',
+          '👋 End the conversation',
+        ],
+        topic: lastBot.topic,
+        lastQ: text,
+      });
+      return;
+    }
+
+    if (text.startsWith('🔁 Ask another question about')) {
+      const topic = messages.filter((m) => m.topic).slice(-1)[0]?.topic;
+      if (topic) {
+        const lastQ = messages.filter((m) => m.lastQ).slice(-1)[0]?.lastQ;
+        const remaining = Object.keys(FAQ_TREE[topic].questions).filter(
+          (q) => q !== lastQ
+        );
+        addMessage({
+          from: 'bot',
+          text: 'Sure! Here are your choices again:',
+          mode: 'faq',
+          options: remaining,
+          topic,
+        });
+      }
+      return;
+    }
+
+    if (text === '📚 Explore a different wellness topic') {
+      addMessage({
+        from: 'bot',
+        text: 'No problem! Let\'s go back to the main menu. Please choose a new topic below:',
+        mode: 'faq',
+        options: MAIN_MENU,
+      });
+      return;
+    }
+
+    if (text === '👋 End the conversation') {
+      addMessage({
+        from: 'bot',
+        text: 'Thanks for chatting with me! 🌟 Come back anytime.',
+        mode: 'faq',
+      });
+      setTimeout(() => {
+        if (isFocused) {
+          setMessages([
+            {
+              from: 'bot',
+              text: MAIN_MENU_PROMPT,
+              mode: 'faq',
+              options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+            },
+          ]);
+          setIsAI(false);
+          setIsAgent(false);
+          setIsAgentAvailable(false);
+        }
+      }, 2000);
+      return;
+    }
+
+    addMessage({
+      from: 'bot',
+      text: 'I didn\'t catch that. Try picking a wellness topic or ask for a live agent.',
+      mode: 'faq',
+      options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+    });
+  };
+
 
   return (
     <KeyboardAvoidingView style={styles.flex1} behavior="height" keyboardVerticalOffset={20}>

@@ -130,7 +130,9 @@ export default function ArticleScreen({
                             <View style={styles.bannerContainer}>
                               {resource.banner && (
                                 <Image
-                                source={{ uri: `${RootAPI}${resource.banner}` }}
+                                  source={{
+                                    uri: resource.banner ? `${RootAPI}${resource.banner}` : require('../../assets/images/MUIcon.png'),
+                                  }}
                                   style={styles.bannerImage}
                                   resizeMode="cover"
                                 />
