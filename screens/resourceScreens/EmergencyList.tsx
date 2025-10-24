@@ -10,7 +10,7 @@ export default function EmergencyList() {
   const [messageError, setMessageError] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [alertModal, setAlertModal] = useState(false);
-
+  const [isDialing, setIsDialing] = useState(false);
 
     const Hotlines = [
         {
@@ -35,15 +35,31 @@ export default function EmergencyList() {
         },
     ];
 
-    const dialNumber = (phoneNumber: string) => {
-      const cleanedNumber = phoneNumber.replace(/[^\d+]/g, ''); // remove spaces, text, etc.
+    const dialNumber = async (phoneNumber: string) => {
+      if (isDialing) {return;} // 🚫 Ignore if a call is already being initiated
+
+      const cleanedNumber = phoneNumber.replace(/[^\d+]/g, ''); // remove non-digit chars
+      if (!cleanedNumber) {return;} // no valid number
+
+      setIsDialing(true);
       const url = `tel:${cleanedNumber}`;
-      Linking.openURL(url).catch(() => {
+
+      try {
+        const canOpen = await Linking.canOpenURL(url);
+        if (canOpen) {
+          await Linking.openURL(url);
+        } else {
+          throw new Error('Unable to open dialer');
+        }
+      } catch (error) {
         setIsSuccessful(false);
-        setMessageError('Email and Password are required.');
+        setMessageError('Unable to initiate call. Please try again.');
         setAlertModal(true);
-      });
+      } finally {
+        setIsDialing(false);
+      }
     };
+
 
     return(
         <>

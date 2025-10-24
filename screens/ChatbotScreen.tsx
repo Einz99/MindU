@@ -29,7 +29,7 @@ import axios from 'axios';
 type Message = {
   from: 'bot' | 'user' | 'counselor';
   text: string;
-  mode: 'faq' | 'chat' | 'counselor';
+  mode: 'faq' | 'chat' | 'counselor' | 'notification';
   options?: string[];
   topic?: string;
   lastQ?: string;
@@ -54,7 +54,7 @@ export default function ChatbotScreen() {
     const [isAI, setIsAI] = useState<boolean>(false);
     const [isAgent, setIsAgent] = useState(false);
     const [isAgentAvailable, setIsAgentAvailable] = useState(false);
-
+    const [isWaitingAgent, setIsWaitingAgent] = useState(false);
     const [lastMessageTime, setLastMessageTime] = useState<Date | null>(null);
 
     useEffect(() => {
@@ -92,7 +92,8 @@ export default function ChatbotScreen() {
         }
       };
       fetchUserData();
-    }, [isAgent, isAgentAvailable, navigation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Initialize Socket.IO connection
     useEffect(() => {
@@ -153,21 +154,17 @@ export default function ChatbotScreen() {
       if (socketRef.current && studentID) {
         socketRef.current.on('agent-disconnection', (data) => {
           console.log('🎉 Agent is now available:', data);
-
-          if (data.isAgentAvailable && data.student_id === studentID) {
-            setIsAI(false);
-            setIsAgentAvailable(false);
-            setIsAgent(false);
-
-            addMessage({from: 'bot', text: 'Your Session With Guidance Office ended', mode: 'faq'});
-
-            setMessages((prev) => [...prev, {
-              from: 'bot',
-              text: 'Welcome! How can I support your wellbeing today?',
-              mode: 'faq',
-              options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
-            }]);
-          }
+          addMessage({from: 'bot', text: 'Your Session With Guidance Office ended', mode: 'faq'});
+          addMessage({
+            from: 'bot',
+            text: 'Welcome! How can I support your wellbeing today?',
+            mode: 'faq',
+            options: [...MAIN_MENU, '💬 Chat with Calmi', '👨‍🏫 Talk to a guidance counselor'],
+          });
+          setIsAI(false);
+          setIsAgent(false);
+          setIsWaitingAgent(false);
+          setIsAgentAvailable(false);
         });
 
         return () => {
@@ -236,7 +233,7 @@ export default function ChatbotScreen() {
         };
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [socketRef.current, studentID, isAI]);
+    }, [socketRef.current, studentID]);
 
     // Join chat room when student ID is available
     useEffect(() => {
@@ -297,7 +294,7 @@ export default function ChatbotScreen() {
                 from: 'bot',
                 text: 'Welcome! How can I support your wellbeing today?',
                 mode: 'faq',
-                options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+                options: [...MAIN_MENU, '💬 Chat with Calmi', '👨‍🏫 Talk to a guidance counselor'],
               }]);
             }
 
@@ -309,7 +306,7 @@ export default function ChatbotScreen() {
                 from: 'bot',
                 text: 'Welcome! How can I support your wellbeing today?',
                 mode: 'faq',
-                options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+                options: [...MAIN_MENU, '💬 Chat with Calmi', '👨‍🏫 Talk to a guidance counselor'],
               }]);
             }
         }
@@ -374,6 +371,7 @@ export default function ChatbotScreen() {
         setIsAI(false);
         setIsAgentAvailable(false);
         setIsAgent(false);
+        setIsWaitingAgent(false);
         try {
           await axios.post(`${API}/chatbot/deactivateStatus/${studentID}`);
         } catch (error) {
@@ -384,7 +382,7 @@ export default function ChatbotScreen() {
           from: 'bot',
           text: 'Welcome! How can I support your wellbeing today?',
           mode: 'faq',
-          options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+          options: [...MAIN_MENU, '💬 Chat with Calmi', '👨‍🏫 Talk to a guidance counselor'],
         }]);
         return;
       }
@@ -424,7 +422,7 @@ export default function ChatbotScreen() {
       // Call the backend to handle the redirection to counselor
       try {
         const response = await axios.put(`${API}/chatbot/get-help/${studentID}`);
-
+        setIsWaitingAgent(true);
         if (response.data.success) {
           // Join the chat room
           if (socketRef.current) {
@@ -456,7 +454,7 @@ export default function ChatbotScreen() {
     }
 
     // If in AI mode and waiting for counselor, allow chatting with bot
-    if (isAI && !isAgentAvailable) {
+    if (isAI && !isAgentAvailable && isWaitingAgent) {
       try {
         const response = await axios.post(`${API}/chatbot/send-message`, {
           message: text,
@@ -472,16 +470,23 @@ export default function ChatbotScreen() {
 
     // If in AI mode
     if (isAI) {
+      console.log('you reach here');
       if (text.toLowerCase() === 'exit') {
         setIsAI(false);
         addMessage({
           from: 'bot',
           text: 'You have exited AI chat. How can I assist you further?',
           mode: 'faq',
-          options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+          options: [...MAIN_MENU, '💬 Chat with Calmi', '👨‍🏫 Talk to a guidance counselor'],
         });
         return;
       }
+
+      addMessage({
+          from: 'user',
+          text: text,
+          mode: 'chat',
+        });
 
       try {
         const response = await axios.post(`${API}/chatbot/send-message`, {
@@ -523,7 +528,7 @@ export default function ChatbotScreen() {
       }
     }
 
-    if (text === '💬 Chat with me') {
+    if (text === '💬 Chat with Calmi') {
       setMessages((prevMessages) => prevMessages.filter(msg => !msg.options));
       addMessage({
         from: 'bot',
@@ -653,7 +658,7 @@ export default function ChatbotScreen() {
               from: 'bot',
               text: MAIN_MENU_PROMPT,
               mode: 'faq',
-              options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+              options: [...MAIN_MENU, '💬 Chat with Calmi', '👨‍🏫 Talk to a guidance counselor'],
             },
           );
           setIsAI(false);
@@ -668,7 +673,7 @@ export default function ChatbotScreen() {
       from: 'bot',
       text: 'I didn\'t catch that. Try picking a wellness topic or ask for a live agent.',
       mode: 'faq',
-      options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
+      options: [...MAIN_MENU, '💬 Chat with Calmi', '👨‍🏫 Talk to a guidance counselor'],
     });
   };
 
@@ -709,7 +714,7 @@ export default function ChatbotScreen() {
                   />
                 )}
                 <View style={styles.chatWidth}>
-                  <Text style={styles.chatbotText}>{msg.text}</Text>
+                  <Text style={[styles.chatbotText]}>{msg.text}</Text>
                   {msg.options?.map((opt, i) => (
                     <TouchableOpacity
                       key={i}
@@ -726,7 +731,7 @@ export default function ChatbotScreen() {
           {(isAI && !isAgentAvailable) && (
             <View style={styles.aiIndicatorContainer}>
               <Text style={styles.aiIndicatorText}>
-                💬 You are chatting with AI • Type "exit" to return to menu
+                💬 You are chatting with Calmi • Type "exit" to return to menu
               </Text>
             </View>
           )}

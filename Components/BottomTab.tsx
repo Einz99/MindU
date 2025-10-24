@@ -8,13 +8,32 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import MoodScreen from '../screens/MoodScreen';
 import ChatbotScreen from '../screens/ChatbotScreen';
 import { useNavigationState, NavigationState } from '@react-navigation/native';
-import UnityView from 'react-native-unity-view'; // Import UnityView component
+// import UnityView from 'react-native-unity-view'; // Import UnityView component
 
 const { width } = Dimensions.get('window');
 
 const Tab = createBottomTabNavigator();
 
-
+//      <Modal
+//         visible={modalVisible}
+//         transparent
+//         animationType="fade"
+//         onRequestClose={() => setModalVisible(false)}
+//       >
+//         <View style={styles.modalContainer}>
+//           {/* UnityView inside modal */}
+//           {/* eslint-disable-next-line react-native/no-inline-styles */}
+//           <UnityView style={{ flex: 1 }} />
+// 
+//           {/* Close button */}
+//           {/* eslint-disable-next-line react-native/no-inline-styles */}
+//           <View style={{ position: 'absolute', right: 20, top: 10, zIndex: 1000 }}>
+//             <TouchableOpacity onPress={() => setModalVisible(false)}>
+//               <Ionicons name="arrow-back" size={25} color="#000" />
+//             </TouchableOpacity>
+//           </View>
+//         </View>
+//       </Modal>
 export default function BottomBarNavComponent() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -68,27 +87,6 @@ export default function BottomBarNavComponent() {
         </TouchableOpacity>
       }
       {/* Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          {/* UnityView inside modal */}
-          {/* eslint-disable-next-line react-native/no-inline-styles */}
-          <UnityView style={{ flex: 1 }} />
-
-          {/* Close button */}
-          {/* eslint-disable-next-line react-native/no-inline-styles */}
-          <View style={{ position: 'absolute', right: 20, top: 10, zIndex: 1000 }}>
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Ionicons name="arrow-back" size={25} color="#000" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarStyle: {
