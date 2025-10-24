@@ -363,7 +363,11 @@ export default function ChatbotScreen() {
     }
 
     const lastBot = messages.filter((m) => m.from === 'bot').slice(-1)[0];
+    const isOptions = messages.filter((m) => m.options).slice(-1).length > 0;
 
+    if (isOptions) {
+      setMessages((prevMessages) => prevMessages.slice(0, -1)); // Remove the last message
+    }
     // If chatting with live agent
     if (isAgent && !isAI) {
       if (text.toLowerCase() === 'exit') {
@@ -644,14 +648,14 @@ export default function ChatbotScreen() {
       });
       setTimeout(() => {
         if (isFocused) {
-          setMessages([
+          addMessage(
             {
               from: 'bot',
               text: MAIN_MENU_PROMPT,
               mode: 'faq',
               options: [...MAIN_MENU, '💬 Chat with me', '👨‍🏫 Talk to a guidance counselor'],
             },
-          ]);
+          );
           setIsAI(false);
           setIsAgent(false);
           setIsAgentAvailable(false);
