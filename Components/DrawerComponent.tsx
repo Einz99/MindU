@@ -209,8 +209,10 @@ const styles = StyleSheet.create({
         fontFamily: 'Poppins-Bold',
         color: 'white',
         fontSize: 35,
-        textAlign: 'left',
+        textAlign: 'center',
         marginBottom: 20,
+        marginTop: -75,
+        marginLeft: -10,
     },
     menuItem: {
         flexDirection: 'row',

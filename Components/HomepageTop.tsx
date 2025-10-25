@@ -219,7 +219,7 @@ const styles = StyleSheet.create({
         top: 0,
     },
     imageBorder: {
-        width: '40%',
+        width: '35%',
         height: '90%',
         backgroundColor: 'white',
         position: 'absolute',
@@ -269,6 +269,7 @@ const styles = StyleSheet.create({
     affirmation: {
         marginTop: '5%',
         width: '90%',
+        marginLeft: '5%',
         height: '35%',
         backgroundColor: 'white',
         borderRadius: 15,

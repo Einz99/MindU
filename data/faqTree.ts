@@ -1,16 +1,12 @@
 // faqTree.js
-
-export const MAIN_MENU_PROMPT =
-  'Hey there! 👋 What kind of wellness are you curious about today? Choose a topic below, or you can chat with me or connect with a guidance counselor.';
-
 export const MAIN_MENU = [
-  '🧠 Emotional & Mental Wellness',
-  '🤝 Social Wellness',
-  '💼 Financial & Occupational Wellness',
-  '🏃 Physical Wellness',
-  '✨ Spiritual Wellness',
-  '📘 Intellectual Wellness',
-  '🌱 Environmental Wellness',
+  'Emotional & Mental Wellness',
+  'Social Wellness',
+  'Financial & Occupational Wellness',
+  'Physical Wellness',
+  'Spiritual Wellness',
+  'Intellectual Wellness',
+  'Environmental Wellness',
 ];
 
 export const FOLLOW_UP_OPTIONS = (topic: any, lastQ: any, remainingQs: string | any[]) => {
@@ -18,8 +14,8 @@ export const FOLLOW_UP_OPTIONS = (topic: any, lastQ: any, remainingQs: string | 
   if (remainingQs.length > 0) {
     opts.push(`🔁 Ask another question about ${topic}`);
   }
-  opts.push('📚 Explore a different wellness topic');
-  opts.push('👋 End the conversation');
+  opts.push('Explore a different wellness topic');
+  opts.push('Go back');
   return opts;
 };
 
@@ -30,8 +26,8 @@ export const FAQ_TREE: Record<
     questions: Record<string, string>;
   }
 > = {
-  '🧠 Emotional & Mental Wellness': {
-    intro: 'You picked Emotional & Mental Wellness! How can I help?',
+  'Emotional & Mental Wellness': {
+    intro: 'What do you want to know about Emotional & Mental Wellness?',
     questions: {
       'What is emotional wellness?':
         'Emotional wellness means being aware of your feelings, handling stress in a healthy way, and being okay with both good and tough emotions. It\'s about knowing when to ask for help too — and that’s totally okay! 😊',
@@ -44,8 +40,8 @@ export const FAQ_TREE: Record<
     },
   },
 
-  '🤝 Social Wellness': {
-    intro: 'You picked Social Wellness! Let’s talk friendships and connections 💬',
+  'Social Wellness': {
+    intro: 'What do you want to know about Social Wellness?',
     questions: {
       'What is social wellness?':
         'It’s all about having good relationships, feeling connected, and being part of a supportive community. Even one or two close friends can make a big difference! 👯',
@@ -58,8 +54,8 @@ export const FAQ_TREE: Record<
     },
   },
 
-  '💼 Financial & Occupational Wellness': {
-    intro: 'You picked Financial & Career Wellness! Let’s talk money and goals 💵🎯',
+  'Financial & Occupational Wellness': {
+    intro: 'What do you want to know about Financial & Career Wellness?',
     questions: {
       'What does financial wellness mean for a student?':
         'It means learning to manage your money wisely — saving, spending smart, and understanding the value of a budget. 💡',
@@ -72,8 +68,8 @@ export const FAQ_TREE: Record<
     },
   },
 
-  '🏃 Physical Wellness': {
-    intro: 'You picked Physical Wellness! Let’s get moving 🏃',
+  'Physical Wellness': {
+    intro: 'What do you want to know about picked Physical Wellness?',
     questions: {
       'How much exercise do I really need?':
         'Aim for about 30–60 minutes a day of activity — even walking, dancing, or sports count! Keep it fun! 🏀',
@@ -86,8 +82,8 @@ export const FAQ_TREE: Record<
     },
   },
 
-  '✨ Spiritual Wellness': {
-    intro: 'You picked Spiritual Wellness! Let’s talk purpose and peace ✨',
+  'Spiritual Wellness': {
+    intro: 'What do you want to know about Spiritual Wellness?',
     questions: {
       'What is spiritual wellness?':
         'It’s about finding meaning, purpose, and feeling connected to something bigger than yourself. 🙏',
@@ -100,8 +96,8 @@ export const FAQ_TREE: Record<
     },
   },
 
-  '📘 Intellectual Wellness': {
-    intro: 'You picked Intellectual Wellness! Keep that brain sharp 📚',
+  'Intellectual Wellness': {
+    intro: 'What do you want to know about Intellectual Wellness?',
     questions: {
       'What is intellectual wellness?':
         'It’s about learning new things, thinking critically, and staying curious about the world. 🧠',
@@ -114,8 +110,8 @@ export const FAQ_TREE: Record<
     },
   },
 
-  '🌱 Environmental Wellness': {
-    intro: 'You picked Environmental Wellness! Let’s talk about your space and the planet 🌍',
+  'Environmental Wellness': {
+    intro: 'What do you want to know about Environmental Wellness?',
     questions: {
       'What is environmental wellness?':
         'It’s about living in a clean, safe, and healthy environment — both at home and in your community. 🏡🌎',
