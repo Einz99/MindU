@@ -99,6 +99,8 @@ export default function ChatbotScreen() {
               setPicturePath(null);
             }
             setIsAgent(response.data.user.isAskingHelp === 1);
+            setIsWaiting(response.data.user.chatStatus !== 'On-going');
+            setIsAgentAvailable(response.data.user.chatStatus === 'On-going');
           } else {
             setIsSuccessful(false);
             setMessageError('User not found. Please try logging in again.');
