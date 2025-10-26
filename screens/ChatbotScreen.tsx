@@ -620,7 +620,7 @@ export default function ChatbotScreen() {
         from: 'user',
         text: text,
       });
-    if (TriggerWords.some((trigger) => text.toLowerCase().includes(trigger.toLowerCase())))
+    if (TriggerWords.some((trigger) => text.toLowerCase().includes(trigger.toLowerCase())) && !alerted)
     {
       setAlerted(true);
       setIsWaiting(true);
@@ -671,11 +671,43 @@ export default function ChatbotScreen() {
       addMessage(InitialChat);
       return;
     }
-    if (text.toLowerCase() === 'exit') {
-      setIsAI(false);
-      addMessage(InitialChat);
-      return;
+    if (alerted && TriggerWords.some((trigger) => text.toLowerCase().includes(trigger.toLowerCase()))) {
+      try {
+        // ✅ Send alert first
+        await axios.post(`${API}/chatbot/${studentID}/alert`);
+        console.log('Alert sent successfully');
+
+        // Then activate help status
+        const response = await axios.put(`${API}/chatbot/get-help/${studentID}`);
+
+        if (response.data.success) {
+          // Join the chat room
+          if (socketRef.current) {
+            socketRef.current.emit('join-chat', studentID);
+          }
+        } else {
+          // If get-help fails, revert states
+          setAlerted(false);
+          setIsAgent(false);
+          setIsWaiting(false);
+          addMessage({
+            from: 'bot',
+            text: 'Sorry, something went wrong. Please try again.',
+          });
+        }
+      } catch (error) {
+        console.error('Error sending alert or connecting to counselor:', error);
+        // Revert states on error
+        setAlerted(false);
+        setIsAgent(false);
+        setIsWaiting(false);
+        addMessage({
+          from: 'bot',
+          text: 'Oops! Something went wrong. Please try again later.',
+        });
+      }
     }
+
     try {
       const response = await axios.post(`${API}/chatbot/send-message`, {
         message: text,
@@ -1073,7 +1105,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#d6c9f3',
   },
   optionText: { fontSize: 12.5, color: '#333', fontFamily: 'Poppins-Regular' },
-  image: {width: 30, height: 30, borderRadius: 20, borderWidth: 2, borderColor: '#b7e3cc'},
+  image: {width: 30, height: 30, borderRadius: 9999, borderWidth: 2, borderColor: '#b7e3cc'},
   overlay: {
     flex: 1,
     justifyContent: 'center',
