@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, Image, Modal, TextInput, TouchableOpacity } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
@@ -119,7 +120,7 @@ export default function HomepageTop( { navigation }: ChildComponentProps ) {
                 <View style={styles.infoContainer}>
                     <Text style={styles.name}>
                       {/* eslint-disable-next-line react-native/no-inline-styles */}
-                      Hi, <Text style={[styles.name, { color: 'white', textShadowColor: '#317873', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2 }]}>{name}</Text>
+                      Hi, <Text style={[styles.name, { color: 'white', textShadowColor: '#317873', textShadowOffset: { width: scale(1), height: verticalScale(1) }, textShadowRadius: moderateScale(2) }]}>{name}</Text>
                     </Text>
                     <Text style={styles.date}>{today}</Text>
                     <View style={styles.affirmation}>
@@ -212,27 +213,27 @@ export default function HomepageTop( { navigation }: ChildComponentProps ) {
 const styles = StyleSheet.create({
     topContainer: {
         width: '100%',
-        height: 190,
+        height: verticalScale(180),
         backgroundColor: '#b7e3cc',
-        borderBottomLeftRadius: 25,
-        borderBottomRightRadius: 25,
-        top: 0,
+        borderBottomLeftRadius: moderateScale(25),
+        borderBottomRightRadius: moderateScale(25),
+        top: verticalScale(0),
     },
     imageBorder: {
         width: '35%',
         height: '90%',
         backgroundColor: 'white',
         position: 'absolute',
-        top: 0,
+        top: verticalScale(0),
         right: '5%',
-        borderBottomLeftRadius: 100,
-        borderBottomRightRadius: 100,
+        borderBottomLeftRadius: moderateScale(100),
+        borderBottomRightRadius: moderateScale(100),
     },
     imageholder: {
         height: '75%',
         width: '90%',
         backgroundColor: 'black',
-        borderRadius: 200,
+        borderRadius: moderateScale(200),
         position: 'absolute',
         bottom: '5%',
         left: '5%',
@@ -240,27 +241,27 @@ const styles = StyleSheet.create({
     image: {
       width: '100%',
       height: '100%',
-      borderRadius: 200,
-      borderWidth: 2,
+      borderRadius: moderateScale(200),
+      borderWidth: moderateScale(2),
       borderColor: '#b7e3cc',
     },
     infoContainer: {
         position: 'absolute',
         width: '52.5%',
         height: '100%',
-        left: 15,
-        top: 0,
+        left: scale(15),
+        top: verticalScale(0),
         textAlign: 'center',
     },
     date: {
         fontWeight: 600,
-        fontSize: 10,
+        fontSize: moderateScale(10),
         fontFamily: 'Lora-Regular',
         color: 'black',
         textAlign: 'center',
     },
     name: {
-        fontSize: 25,
+        fontSize: moderateScale(25),
         color: '#317873',
         textAlign: 'center',
         fontFamily: 'Poppins-ExtraBold',
@@ -272,21 +273,21 @@ const styles = StyleSheet.create({
         marginLeft: '5%',
         height: '35%',
         backgroundColor: 'white',
-        borderRadius: 15,
+        borderRadius: moderateScale(15),
         position: 'relative',
     },
     affirmationTxt: {
-        marginLeft: 15,
-        marginRight: 25,
-        marginTop: 7,
-        fontSize: 12,
+        marginLeft: scale(15),
+        marginRight: scale(25),
+        marginTop: verticalScale(7),
+        fontSize: moderateScale(12),
         fontFamily: 'Lora-Regular',
         color: 'black',
         textAlignVertical: 'center',
     },
     icon: {
       position: 'absolute',
-      right: 5,
+      right: scale(5),
       color: 'black',
     },
     modalBackground: {
@@ -298,27 +299,27 @@ const styles = StyleSheet.create({
     modalContainer: {
       width: '80%',
       backgroundColor: 'white',
-      padding: 20,
-      borderRadius: 15,
+      padding: moderateScale(20),
+      borderRadius: moderateScale(15),
       alignItems: 'center',
     },
     modalInput: {
       width: '100%',
-      borderWidth: 1,
+      borderWidth: moderateScale(1),
       borderColor: '#ccc',
-      borderRadius: 8,
-      padding: 10,
-      marginBottom: 15,
+      borderRadius: moderateScale(8),
+      padding: moderateScale(10),
+      marginBottom: verticalScale(15),
       color: 'black',
       fontFamily: 'Lora-Regular',
     },
     modalButton: {
       backgroundColor: '#b7e3cc',
-      paddingVertical: 10,
-      paddingHorizontal: 20,
-      borderRadius: 10,
+      paddingVertical: verticalScale(10),
+      paddingHorizontal: scale(20),
+      borderRadius: moderateScale(10),
     },
-    modalTitle: { fontSize: 18, marginBottom: 10, color: 'black', fontFamily: 'Poppins-Regular' },
+    modalTitle: { fontSize: moderateScale(18), marginBottom: verticalScale(10), color: 'black', fontFamily: 'Poppins-Regular' },
     actionButton: { flexDirection: 'row', justifyContent: 'space-between', width: '100%' },
     white: { color: 'white', fontFamily: 'Lora-Regular' },
     overlay: {
@@ -329,10 +330,10 @@ const styles = StyleSheet.create({
   },
   forgotModal: {
     width: '85%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: scale(0), height: verticalScale(3) },
     elevation: 5,
     backgroundColor: 'white',
   },
@@ -340,51 +341,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     backgroundColor: '#b7e3cc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    borderTopLeftRadius: moderateScale(15),
+    borderTopRightRadius: moderateScale(15),
   },
   redHeader: {
     backgroundColor: '#e3b7b7',
   },
   marginB: {
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   modalTitleStyled: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: '#333',
     fontFamily: 'Poppins-Bold',
   },
   instructions: {
     fontFamily: 'Lora-Bold',
     color: '#4a4a4a',
-    paddingHorizontal: 40,
+    paddingHorizontal: scale(40),
     textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    gap: moderateScale(10),
+    paddingHorizontal: scale(20),
+    paddingBottom: verticalScale(10),
     justifyContent: 'flex-end',
   },
   sendBtn: {
     backgroundColor: '#b7e3cc',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(20),
+    borderRadius: moderateScale(10),
   },
   sendText: {
     color: 'white',
     fontFamily: 'Poppins-ExtraBold',
-    shadowRadius: 3,
-    shadowOffset: {width: 1, height: 1},
+    shadowRadius: moderateScale(3),
+    shadowOffset: {width: scale(1), height: verticalScale(1)},
     shadowColor: 'gray',
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
 
 });

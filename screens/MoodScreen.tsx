@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Text, ScrollView, View, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import DrawerComponent from '../Components/DrawerComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API } from '../apiConfigs';
@@ -111,16 +112,15 @@ export default function MoodScreen() {
           startOfWeek.setDate(Today.getDate() - Today.getDay());
           startOfWeek.setHours(0, 0, 0, 0);
 
+          // Updated moodMap to always show day name and date
           const moodMap = latest7.map((item: any) => {
             const date = new Date(item.emotion_dated);
-            const isThisWeek = date >= startOfWeek;
 
             return {
               emoji: getEmoji(item.emotion),
               label: item.emotion,
-              dayName: isThisWeek
-                ? date.toLocaleDateString('en-US', { weekday: 'short' })
-                : `${date.getMonth() + 1}/${date.getDate()}`,
+              dayName: date.toLocaleDateString('en-US', { weekday: 'short' }), // Always show day name
+              dateStr: `${date.getMonth() + 1}/${date.getDate()}`, // Always show date
             };
           });
 
@@ -194,7 +194,7 @@ export default function MoodScreen() {
 
       // Calculate the height based on which mood row the bar belongs to
       // Each mood row is 40px height
-      return 39.5 * (6 - moodIndex) + 10 + (1.5 * moodIndex); // 6 is the max index (7 moods - 1)
+      return verticalScale(39.5 * (6 - moodIndex) + 10 + (1.5 * moodIndex)); // 6 is the max index (7 moods - 1)
     };
 
     const generateCalendarDays = () => {
@@ -360,6 +360,7 @@ export default function MoodScreen() {
                             <View style={styles.MoodEmpty} />
                           )}
                           <Text style={styles.moodDays}>{item?.dayName || 'none'}</Text>
+                          <Text style={styles.moodDates}>{item?.dateStr || 'none'}</Text>
                           <Text style={styles.MoodLabel}>{item?.label || 'none'}</Text>
                         </View>
                       ))}
@@ -541,7 +542,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         flexGrow: 1,
-        paddingBottom: 120,
+        paddingBottom: verticalScale(120),
     },
     container: {
         width: '100%',
@@ -549,69 +550,69 @@ const styles = StyleSheet.create({
     },
     titleBox: {
         backgroundColor: '#b7e3cc',
-        paddingVertical: 5,
-        paddingHorizontal: 50,
-        borderRadius: 25,
-        marginTop: 10,
-        marginBottom: 10,
+        paddingVertical: verticalScale(5),
+        paddingHorizontal: scale(50),
+        borderRadius: moderateScale(25),
+        marginTop: verticalScale(10),
+        marginBottom: verticalScale(10),
     },
     title: {
-        fontSize: 15,
-        letterSpacing: 2,
+        fontSize: moderateScale(15),
+        letterSpacing: moderateScale(2),
         fontFamily: 'Poppins-Bold',
         color: 'black',
     },
     greetingContainer: {
         alignItems: 'flex-start',
         justifyContent: 'center',
-        marginTop: 20,
-        paddingHorizontal: 20,
+        marginTop: verticalScale(20),
+        paddingHorizontal: scale(20),
     },
     greetingsName: {
         fontFamily: 'Poppins-Bold',
-        fontSize: 25,
+        fontSize: moderateScale(25),
         color: '#317873',
         marginBottom: -10,
     },
     greetingsSubtitle: {
         fontFamily: 'Lora-Regular',
-        fontSize: 15,
+        fontSize: moderateScale(15),
         color: 'black',
     },
     MoodContainers: {
         backgroundColor: '#b7e3cc',
-        borderRadius: 15,
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        marginTop: 20,
-        marginHorizontal: 20,
+        borderRadius: moderateScale(15),
+        paddingHorizontal: scale(20),
+        paddingVertical: verticalScale(10),
+        marginTop: verticalScale(20),
+        marginHorizontal: scale(20),
     },
     MoodHistoryTitleContainer: {
         flexDirection: 'row',
-        gap: 10,
+        gap: moderateScale(10),
         marginBottom: -5,
     },
     MoodHistoryTitle: {
         fontFamily: 'Poppins-Bold',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         color: 'black',
         textTransform: 'uppercase',
         width: '50%',
         textAlignVertical: 'center',
     },
-    MoodHistoryTitleVerticalLine: { width: 1.5, backgroundColor: 'gray', height: 25},
+    MoodHistoryTitleVerticalLine: { width: scale(1.5), backgroundColor: 'gray', height: verticalScale(25)},
     MoodHistoryDate: {
         fontFamily: 'Lora-Regular',
-        fontSize: 12,
+        fontSize: moderateScale(12),
         color: 'black',
-        marginLeft: 5,
-        top: 5,
+        marginLeft: scale(5),
+        top: verticalScale(5),
     },
     Moods: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        borderBottomWidth: 1,
-        paddingBottom: 10,
+        borderBottomWidth: moderateScale(1),
+        paddingBottom: verticalScale(10),
         borderBottomColor: '#666',
     },
     Mood: {
@@ -619,198 +620,204 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     MoodText: {
-        fontSize: 30,
-        width: 40,
-        height: 40,
+        fontSize: moderateScale(30),
+        width: scale(40),
+        height: verticalScale(40),
         textAlign: 'center',
-        borderRadius: 22,
+        borderRadius: moderateScale(22),
         overflow: 'hidden',
-        marginBottom: 4,
+        marginTop: verticalScale(5),
+        marginBottom: verticalScale(-3),
     },
     MoodEmpty: {
-        width: 35,
-        height: 35,
-        borderRadius: 22,
+        width: scale(35),
+        height: verticalScale(35),
+        borderRadius: moderateScale(22),
         backgroundColor: '#b7e3cc',
-        marginBottom: 4,
-        borderWidth: 2,
+        marginBottom: verticalScale(4),
+        borderWidth: moderateScale(2),
         borderColor: '#4b946a',
         borderStyle: 'dashed',
-        marginVertical: 7,
+        marginVertical: verticalScale(7),
     },
     moodDays: {
         color: '#666',
-        fontSize: 12,
+        fontSize: moderateScale(12),
+        fontFamily: 'Lora-Regular',
+    },
+    moodDates: {
+        color: '#666',
+        fontSize: moderateScale(10),
         fontFamily: 'Lora-Regular',
     },
     MoodLabel: {
-        fontSize: 8,
+        fontSize: moderateScale(8),
         color: '#444',
         fontFamily: 'Lora-Bold',
     },
     buttonContainer: {
         alignItems: 'center',
-        marginTop: 10,
+        marginTop: verticalScale(10),
     },
     todayButton: {
         color: 'white',
         fontFamily: 'Poppins-Bold',
         textAlign: 'center',
-        padding: 8,
+        padding: moderateScale(8),
         backgroundColor: '#4b946a',
         width: '80%',
-        borderRadius: 25,
+        borderRadius: moderateScale(25),
     },
     GraphTitle: {
         fontFamily: 'Poppins-Bold',
-        fontSize: 18,
+        fontSize: moderateScale(18),
         color: 'black',
         textTransform: 'uppercase',
         textAlignVertical: 'center',
     },
     graphContainer: {
       flexDirection: 'row',
-      height: 300,
-      marginBottom: 10,
+      height: verticalScale(300),
+      marginBottom: verticalScale(10),
     },
     moodLabels: {
-      width: 40,
-      marginRight: 10,
+      width: scale(40),
+      marginRight: scale(10),
     },
     moodRow: {
-      height: 37.5,
+      height: verticalScale(37.5),
       alignItems: 'center',
       flexDirection: 'row',
     },
     emoji: {
-      fontSize: 24,
+      fontSize: moderateScale(24),
     },
     gridContainer: {
       flex: 1,
       position: 'relative',
     },
     gridLine: {
-      marginTop: 20,
-      height: 1,
+      marginTop: verticalScale(20),
+      height: verticalScale(1),
       backgroundColor: '#555',
       width: '100%',
-      marginBottom: 17, // 40px total height per row
+      marginBottom: verticalScale(17), // 40px total height per row
     },
     horizontalAxis: {
-      height: 2,
+      height: verticalScale(2),
       backgroundColor: '#000',
       width: '123%',
       position: 'absolute',
-      bottom: 30, // Space for day labels
+      bottom: verticalScale(30), // Space for day labels
       left: -55,
     },
     verticalAxis: {
-      width: 2,
+      width: scale(2),
       backgroundColor: '#000',
       height: '100%',
       position: 'absolute',
-      left: 0,
+      left: scale(0),
     },
     daysAndBars: {
       flexDirection: 'row',
       position: 'absolute',
-      bottom: 2.5,
-      left: 0,
-      right: 0,
+      bottom: verticalScale(2.5),
+      left: scale(0),
+      right: scale(0),
       height: '100%',
-      paddingLeft: 5, // Space from vertical axis
+      paddingLeft: scale(5), // Space from vertical axis
     },
     dayColumn: {
-      width: 32.5,
+      width: scale(32.5),
       alignItems: 'center',
       position: 'relative',
       height: '100%',
-      marginLeft: 1,
+      marginLeft: scale(1),
     },
     moodBar: {
-      width: 30,
+      width: scale(30),
       position: 'absolute',
-      bottom: 30, // Above day labels
+      bottom: verticalScale(30), // Above day labels
       backgroundColor: '#fff9c4',
-      borderWidth: 0.5,
+      borderWidth: moderateScale(0.5),
       borderColor: '#333',
-      borderBottomWidth: 0,
+      borderBottomWidth: moderateScale(0),
     },
     dayLabel: {
       position: 'absolute',
-      bottom: 5,
-      fontSize: 10,
+      bottom: verticalScale(5),
+      fontSize: moderateScale(10),
       textAlign: 'center',
       fontFamily: 'Lora-Bold',
       color: 'black',
     },
     calendarContainer: {
-      padding: 20,
+      padding: moderateScale(20),
       alignItems: 'center',
     },
     yearText: {
-      fontSize: 25,
+      fontSize: moderateScale(25),
       fontFamily: 'Lora-Bold',
-      marginBottom: 10,
+      marginBottom: verticalScale(10),
       color: 'white',
     },
     MonthNavigatorBG: {
       width: '100%',
       paddingHorizontal: '10%',
       backgroundColor: '#4b946a',
-      borderTopLeftRadius: 10,
-      borderTopRightRadius: 10,
+      borderTopLeftRadius: moderateScale(10),
+      borderTopRightRadius: moderateScale(10),
       alignItems: 'center',
     },
     monthNavigator: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: 10,
+      marginBottom: verticalScale(10),
     },
     navButton: {
       textAlignVertical: 'center',
-      marginBottom: 10,
+      marginBottom: verticalScale(10),
     },
     navButtonText: {
-      fontSize: 18,
+      fontSize: moderateScale(18),
     },
     monthText: {
-      fontSize: 22,
+      fontSize: moderateScale(22),
       fontFamily: 'Poppins-ExtraBold',
-      marginHorizontal: 20,
+      marginHorizontal: scale(20),
       color: 'black',
     },
     calendar: {
       backgroundColor: '#cfe8d5',
-      padding: 10,
-      borderRadius: 10,
+      padding: moderateScale(10),
+      borderRadius: moderateScale(10),
       width: '100%',
     },
     daysHeader: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginBottom: 8,
+      marginBottom: verticalScale(8),
     },
     dayName: {
-      fontSize: 12,
+      fontSize: moderateScale(12),
       fontFamily: 'Poppins-Bold',
       color: 'black',
-      width: 30,
+      width: scale(30),
       textAlign: 'center',
     },
     week: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginVertical: 4,
+      marginVertical: verticalScale(4),
     },
     day: {
-      width: 30,
-      height: 50,
+      width: scale(30),
+      height: verticalScale(50),
       justifyContent: 'center',
       alignItems: 'center',
     },
     dayText: {
-      fontSize: 14,
+      fontSize: moderateScale(14),
       color: 'black',
       fontFamily: 'Lora-Regular',
       textAlign: 'center',
@@ -831,49 +838,49 @@ const styles = StyleSheet.create({
       backgroundColor: 'transparent',
     },
     dayBGSettings: {
-      width: 25,
-      borderRadius: 9999,
-      padding: 3,
+      width: scale(25),
+      borderRadius: moderateScale(9999),
+      padding: moderateScale(3),
     },
     calendarEmoji: {
         textAlign: 'center',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         color: 'black',
     },
     emptyEmoji: {
         backgroundColor: 'transparent',
-        width: 20,
-        height: 20,
+        width: scale(20),
+        height: verticalScale(20),
     },
     SummaryContainer: {
         flex: 1,
         alignItems: 'center',
-        padding: 20,
+        padding: moderateScale(20),
     },
     SummaryTitle: {
         fontFamily: 'Poppins-Bold',
-        fontSize: 25,
+        fontSize: moderateScale(25),
         color: '#317873',
     },
     SummaryMoodContainer: {
         flex: 1,
         flexDirection: 'row',
-        gap: 20,
+        gap: moderateScale(20),
     },
     BeforeSummarized: {
         flexDirection: 'column',
-        gap: 10,
+        gap: moderateScale(10),
         justifyContent: 'center',
     },
     SummarizedContainer:{
-        height: 35,
-        width: 100,
-        borderRadius: 9999,
-        paddingVertical: 7.5,
+        height: verticalScale(35),
+        width: scale(100),
+        borderRadius: moderateScale(9999),
+        paddingVertical: verticalScale(7.5),
     },
     SummarizedText: {
         fontFamily: 'Poppins-Bold',
-        fontSize: 15,
+        fontSize: moderateScale(15),
         color: 'black',
         textAlignVertical: 'center',
         textAlign: 'center',
@@ -881,16 +888,16 @@ const styles = StyleSheet.create({
     MostDays: {
         margin: 20,
         width: '100%',
-        height: 80,
-        borderRadius: 22,
+        height: verticalScale(80),
+        borderRadius: moderateScale(22),
         borderColor: '#317873',
         color: 'black',
         fontFamily: 'Lora-Regular',
-        fontSize: 20,
+        fontSize: moderateScale(20),
         textAlign: 'center',
         textAlignVertical: 'center',
-        borderWidth: 2,
-        paddingHorizontal: 5,
+        borderWidth: moderateScale(2),
+        paddingHorizontal: scale(5),
     },
     modalContainer: {
       flex: 1,
@@ -898,6 +905,6 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       alignItems: 'center',
     },
-    modalBG: { position: 'absolute', top: 0, width: width, height: height },
+    modalBG: { position: 'absolute', top: verticalScale(0), width: width, height: height },
 });
 

@@ -3,6 +3,7 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 export default function OnboardingScreen() {
     const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -44,11 +45,12 @@ const styles = StyleSheet.create({
     image: {
         width: '100%',
         height: '100%',
+        resizeMode: 'contain',
     },
     quote: {
         position: 'absolute',
         top: '75%',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         textAlign: 'center',
         fontStyle: 'italic',
         color: '#333',
@@ -58,13 +60,13 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: '90%',
         backgroundColor: '#2D6A4F',
-        paddingVertical: 12,
-        paddingHorizontal: 30,
-        borderRadius: 25,
+        paddingVertical: verticalScale(12),
+        paddingHorizontal: scale(30),
+        borderRadius: moderateScale(25),
     },
     buttonText: {
         color: '#FFF',
-        fontSize: 16,
+        fontSize: moderateScale(16),
         fontWeight: 'bold',
     },
 });

@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, StyleSheet, Text, TouchableOpacity, Image} from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { WellnessStackParamList } from '../../types';
 import DrawerComponent from '../../Components/DrawerComponent';
@@ -39,26 +40,26 @@ const styles = StyleSheet.create({
     },
     titleBox: {
         backgroundColor: '#b7e3cc',
-        paddingVertical: 5,
-        paddingHorizontal: 50,
-        borderRadius: 25,
-        marginTop: 10,
-        marginBottom: 80,
+        paddingVertical: verticalScale(5),
+        paddingHorizontal: scale(50),
+        borderRadius: moderateScale(25),
+        marginTop: verticalScale(10),
+        marginBottom: verticalScale(80),
     },
     title: {
-        fontSize: 15,
-        letterSpacing: 2,
+        fontSize: moderateScale(15),
+        letterSpacing: moderateScale(2),
         fontFamily: 'Poppins-ExtraBold',
         color: 'black',
     },
     Box: {
         width: '80%',
         height: '40%',
-        marginBottom: 25,
+        marginBottom: verticalScale(25),
     },
     image: {
         width: '100%',
         height: '100%',
-        borderRadius: 15,
+        borderRadius: moderateScale(15),
     },
 });

@@ -18,6 +18,7 @@ import Video from 'react-native-video';
 import DrawerComponent from '../../Components/DrawerComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface Resource {
   ID: number;
@@ -260,24 +261,24 @@ const styles = StyleSheet.create({
       },
       titleBox: {
         backgroundColor: '#fff59d',
-        paddingVertical: 10,
-        paddingHorizontal: 50,
-        borderBottomLeftRadius: 25,
-        borderBottomRightRadius: 25,
-        marginBottom: 20,
+        paddingVertical: verticalScale(10),
+        paddingHorizontal: scale(50),
+        borderBottomLeftRadius: moderateScale(25),
+        borderBottomRightRadius: moderateScale(25),
+        marginBottom: verticalScale(20),
       },
       title: {
-        fontSize: 15,
-        letterSpacing: 2,
+        fontSize: moderateScale(15),
+        letterSpacing: moderateScale(2),
         fontFamily: 'Poppins-ExtraBold',
         color: 'black',
       },
       articleDetailContainer: {
           position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0, // Allows bottom tab bar to remain visible
+          top: verticalScale(0),
+          left: scale(0),
+          right: scale(0),
+          bottom: verticalScale(0), // Allows bottom tab bar to remain visible
           backgroundColor: 'white',
           zIndex: 100,
       },
@@ -291,7 +292,7 @@ const styles = StyleSheet.create({
       },
       VideoView: {
           width: '100%',
-          height: 250,
+          height: verticalScale(250),
       },
       Video: {
           width: '100%',
@@ -304,25 +305,25 @@ const styles = StyleSheet.create({
       VideoText: {
         width: '100%',
         height: '100%',
-        paddingHorizontal: 20,
+        paddingHorizontal: scale(20),
       },
       articleTitle: {
-        fontSize: 50,
+        fontSize: moderateScale(50),
         fontFamily: 'Poppins-Regular',
         color: 'black',
       },
       articleDate: {
-        fontSize: 15,
+        fontSize: moderateScale(15),
         color: 'grey',
-        marginBottom: 10,
+        marginBottom: verticalScale(10),
         fontFamily: 'Lora-Regular',
       },
       articleDesc: {
-        fontSize: 15,
+        fontSize: moderateScale(15),
         textAlign: 'justify',
         fontFamily: 'Lora-SemiBold',
         color: 'black',
       },
-    backButton: {position: 'absolute', zIndex: 10, top: 20, right: 10},
-    lefted: {left: 10, right: 0},
+    backButton: {position: 'absolute', zIndex: 10, top: verticalScale(20), right: scale(10)},
+    lefted: {left: scale(10), right: scale(0)},
 });

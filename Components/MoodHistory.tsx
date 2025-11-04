@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { BottomTabParamList } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -101,8 +102,7 @@ export default function MoodHistory() {
       <View style={styles.moodRow}>
         {moodData.map((item, index) => (
           <View key={index} style={styles.moodItem}>
-            {/* eslint-disable-next-line react-native/no-inline-styles */}
-            <Text style={[styles.emoji, !item.emoji && {paddingTop: 9}]}>
+            <Text style={[styles.emoji, !item.emoji && {paddingTop: verticalScale(9)}]}>
               {!item.emoji ?
               <View style={styles.emptyEmoji}><></></View>
               : item.emoji}
@@ -121,27 +121,27 @@ export default function MoodHistory() {
   const styles = StyleSheet.create({
     wrapper: {
       backgroundColor: '#C6F1DE',
-      borderRadius: 12,
-      padding: 12,
-      margin: 16,
+      borderRadius: moderateScale(12),
+      padding: moderateScale(12),
+      margin: moderateScale(16),
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 10,
+      marginBottom: verticalScale(10),
     },
     heading: {
       fontFamily: 'Poppins-ExtraBold',
-      fontSize: 16,
+      fontSize: moderateScale(16),
       color: 'black',
     },
     viewBtn: {
       backgroundColor: '#fff',
       color: '#444',
-      paddingHorizontal: 12,
-      paddingVertical: 2,
-      borderRadius: 10,
-      fontSize: 12,
+      paddingHorizontal: scale(12),
+      paddingVertical: verticalScale(2),
+      borderRadius: moderateScale(10),
+      fontSize: moderateScale(12),
       fontWeight: '600',
       textAlignVertical: 'center',
       fontFamily: 'Poppins-Light',
@@ -155,23 +155,30 @@ export default function MoodHistory() {
       flex: 1,
     },
     emoji: {
-      fontSize: 30,
-      width: 40,
-      height: 40,
+      fontSize: moderateScale(30),
+      width: moderateScale(40),
+      height: verticalScale(40),
       textAlign: 'center',
-      borderRadius: 22,
+      borderRadius: moderateScale(20),
       overflow: 'hidden',
-      marginBottom: 4,
+      marginBottom: verticalScale(4),
     },
     day: {
       color: 'black',
-      fontSize: 12,
+      fontSize: moderateScale(12),
       fontFamily: 'Lora-Regular',
     },
     label: {
-      fontSize: 8,
+      fontSize: moderateScale(8),
       color: '#444',
       fontFamily: 'Lora-Bold',
     },
-    emptyEmoji: {borderWidth: 2, borderColor: '#4b946a', width: 30, height: 30, borderRadius: 9999, borderStyle: 'dotted'},
+    emptyEmoji: {
+      borderWidth: 2,
+      borderColor: '#4b946a',
+      width: moderateScale(30),
+      height: moderateScale(30),
+      borderRadius: moderateScale(15),
+      borderStyle: 'dotted',
+    },
   });

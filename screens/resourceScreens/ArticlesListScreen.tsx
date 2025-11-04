@@ -9,6 +9,7 @@ import {
     BackHandler,
     TouchableOpacity,
 } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import { API, RootAPI } from '../../apiConfigs';
@@ -268,10 +269,10 @@ const styles = StyleSheet.create({
     },
     articleDetailContainer: {
         position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0, // Allows bottom tab bar to remain visible
+        top: verticalScale(0),
+        left: scale(0),
+        right: scale(0),
+        bottom: verticalScale(0), // Allows bottom tab bar to remain visible
         backgroundColor: 'white',
         zIndex: 100,
     },
@@ -285,49 +286,49 @@ const styles = StyleSheet.create({
     },
     titleBox: {
         backgroundColor: '#fff59d',
-        paddingVertical: 10,
-        paddingHorizontal: 40,
-        borderBottomLeftRadius: 25,
-        borderBottomRightRadius: 25,
-        marginBottom: 20,
+        paddingVertical: verticalScale(10),
+        paddingHorizontal: scale(40),
+        borderBottomLeftRadius: moderateScale(25),
+        borderBottomRightRadius: moderateScale(25),
+        marginBottom: verticalScale(20),
     },
     title: {
-        fontSize: 15,
-        letterSpacing: 2,
+        fontSize: moderateScale(15),
+        letterSpacing: moderateScale(2),
         fontFamily: 'Poppins-ExtraBold',
     },
     article: {
         width: '100%',
-        padding: 20,
+        padding: moderateScale(20),
     },
     articleTitle: {
-        fontSize: 40,
-        paddingLeft: 6,
+        fontSize: moderateScale(40),
+        paddingLeft: scale(6),
         fontFamily: 'Poppins-SemiBold',
         color: 'black',
     },
     articleTime: {
         color: 'grey',
-        fontSize: 15,
-        paddingLeft: 6,
+        fontSize: moderateScale(15),
+        paddingLeft: scale(6),
         fontFamily: 'Lora-Regular',
     },
     articleAuthor: {
-        fontSize: 15,
-        paddingLeft: 6,
+        fontSize: moderateScale(15),
+        paddingLeft: scale(6),
         fontFamily: 'Poppins-SemiBold',
         color: 'black',
     },
     articleImage: {
         width: '95%',
-        height: 200,
+        height: verticalScale(200),
         alignSelf: 'center',
     },
     webView: {
-        height: 300,
-        marginTop: 10,
+        height: verticalScale(300),
+        marginTop: verticalScale(10),
         width: '100%',
     },
-    backButton: {position: 'absolute', zIndex: 10, top: 20, right: 10},
-    lefted: {left: 10, right: 0},
+    backButton: {position: 'absolute', zIndex: 10, top: verticalScale(20), right: scale(10)},
+    lefted: {left: scale(10), right: scale(0)},
 });

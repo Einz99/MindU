@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { useState, useEffect, useRef} from 'react';
 import { AppState } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import {
   ScrollView,
   StyleSheet,
@@ -99,7 +100,6 @@ export default function ChatbotScreen() {
               setPicturePath(null);
             }
             setIsAgent(response.data.user.isAskingHelp === 1);
-            setIsWaiting(response.data.user.chatStatus !== 'On-going');
             setIsAgentAvailable(response.data.user.chatStatus === 'On-going');
           } else {
             setIsSuccessful(false);
@@ -120,6 +120,22 @@ export default function ChatbotScreen() {
     }, []);
 
     // =================== Saving and loading States (isWaiting and alerted)
+    useEffect(() => {
+      const saveAgentAvailableState = async () => {
+        try {
+          await AsyncStorage.setItem(
+            'isWaiting',
+            JSON.stringify(isWaiting)
+          );
+          console.log('💾 Saved isWaiting:', isWaiting);
+        } catch (error) {
+          console.error('Error saving agent available state:', error);
+        }
+      };
+
+      saveAgentAvailableState();
+    }, [isWaiting]);
+
     useEffect(() => {
       const loadAgentAvailableState = async () => {
         try {
@@ -142,17 +158,17 @@ export default function ChatbotScreen() {
       const saveAgentAvailableState = async () => {
         try {
           await AsyncStorage.setItem(
-            'isWaiting',
-            JSON.stringify(isWaiting)
+            'isAlerted',
+            JSON.stringify(alerted)
           );
-          console.log('💾 Saved isWaiting:', isWaiting);
+          console.log('💾 Saved isAlerted:', alerted);
         } catch (error) {
           console.error('Error saving agent available state:', error);
         }
       };
 
       saveAgentAvailableState();
-    }, [isWaiting]);
+    }, [alerted]);
 
     useEffect(() => {
       const loadAlertedState = async () => {
@@ -170,22 +186,6 @@ export default function ChatbotScreen() {
 
       loadAlertedState();
     }, []); // Run only once on mount
-
-    useEffect(() => {
-      const saveAgentAvailableState = async () => {
-        try {
-          await AsyncStorage.setItem(
-            'isAlerted',
-            JSON.stringify(alerted)
-          );
-          console.log('💾 Saved isAlerted:', alerted);
-        } catch (error) {
-          console.error('Error saving agent available state:', error);
-        }
-      };
-
-      saveAgentAvailableState();
-    }, [alerted]);
     // ===================
 
     // Initialize Socket.IO connection
@@ -327,38 +327,51 @@ export default function ChatbotScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socketRef.current, studentID, alerted]);
 
-    useEffect(() => {
-      if (socketRef.current && studentID) {
-        socketRef.current.on('agent-disconnection', async (data) => {
-          console.log('🎉 Agent is now available:', data);
+// Replace the existing agent-disconnection useEffect with this:
+useEffect(() => {
+  if (!socketRef.current || !studentID) {return;}
 
-          try {
-            await axios.post(`${API}/chatbot/insert-chat-message`, {
-              student_id: studentID,
-              message: 'Your Session With Guidance Office ended',
-              is_from_office: false,
-            });
-            console.log('Message sent to agent');
-          } catch (error) {
-            console.error('Error sending message to agent:', error);
-          }
+  const handleAgentDisconnection = async (data: { student_id: number; }) => {
+    console.log('👋 Received agent-disconnection event:', data);
+    console.log('Current studentID:', studentID);
+    console.log('Event student_id:', data.student_id);
 
-          addMessage(InitialChat);
+    // ✅ VERIFY this disconnection is for THIS student
+    if (data.student_id === studentID) {
+      console.log('✅ Disconnection confirmed for this student');
+      // Add initial menu back
+      addMessage(InitialChat);
 
-          setIsAI(false);
-          setIsAgent(false);
-          setIsAgentAvailable(false);
-          setIsWaiting(false);
-        });
+      // Reset all states
+      setIsAI(false);
+      setIsAgent(false);
+      setIsAgentAvailable(false);
+      setIsWaiting(false);
+      setAlerted(false);
 
-        return () => {
-          if (socketRef.current) {
-            socketRef.current.off('agent-disconnecting');
-          }
-        };
+      // Clear saved states from AsyncStorage
+      try {
+        await AsyncStorage.setItem('isWaiting', JSON.stringify(false));
+        await AsyncStorage.setItem('isAlerted', JSON.stringify(false));
+        console.log('✅ Cleared saved states');
+      } catch (error) {
+        console.error('Error clearing saved states:', error);
       }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    } else {
+      console.log('⏭️ Disconnection not for this student - ignoring');
+    }
+  };
+
+  socketRef.current.on('agent-disconnection', handleAgentDisconnection);
+
+  return () => {
+    if (socketRef.current) {
+      console.log('🧹 Cleaning up agent-disconnection listener');
+      socketRef.current.off('agent-disconnection', handleAgentDisconnection); // ✅ CORRECT EVENT NAME
+    }
+  };
+}, [studentID]); // ✅ Include studentID as dependency
+
 
     // Listen for new chat messages
     useEffect(() => {
@@ -427,7 +440,7 @@ export default function ChatbotScreen() {
     const subscription = AppState.addEventListener('change', async (nextAppState) => {
       if (appState.match(/inactive|background/) && nextAppState === 'active') {
         // App has come to foreground - check inactivity
-        if (isAgent && lastMessageTime && !isWaiting) {
+        if (isAgent && lastMessageTime && !isWaiting && !alerted) {
           const timeElapsed = new Date().getTime() - lastMessageTime.getTime();
           if (timeElapsed >= 180000) {
             // Disconnect due to inactivity
@@ -461,12 +474,12 @@ export default function ChatbotScreen() {
     return () => {
       subscription.remove();
     };
-  }, [appState, isAgent, isWaiting, lastMessageTime, studentID]);
+  }, [alerted, appState, isAgent, isWaiting, lastMessageTime, studentID]);
 
   // Your existing timer (for when app is active)
   useEffect(() => {
     // Clear timeout immediately if agent is no longer active
-    if (!isAgent && isWaiting) {
+    if ((!isAgent && isWaiting) || alerted) {
       if (inactivityTimeoutRef.current) {
         clearTimeout(inactivityTimeoutRef.current);
         inactivityTimeoutRef.current = null;
@@ -515,11 +528,18 @@ export default function ChatbotScreen() {
         clearTimeout(inactivityTimeoutRef.current);
       }
     };
-  }, [lastMessageTime, isAgent, isWaiting, studentID]);
+  }, [lastMessageTime, isAgent, isWaiting, studentID, alerted]);
 
   // Handle user input and manage interaction flow
   const handleUserInput = async (text: string, idx: number | null, i: number | null) => {
   if (!text.trim()) {return;}
+
+  // Log student activity for the Chatbot module
+  try {
+    await axios.post(`${API}/student-activities/insert`, { module: 'Chatbot' });
+  } catch (err) {
+    console.error('Error logging student activity:', err);
+  }
 
   // If idx and i are provided (option button clicked)
   if (idx !== null && i !== null) {
@@ -614,7 +634,8 @@ export default function ChatbotScreen() {
     }
     return;
   }
-
+  const normalizedText = text.toLowerCase();
+  const matchedTrigger = TriggerWords.find(trigger => normalizedText.includes(trigger.toLowerCase()));
   // If in AI mode
   if (isAI) {
     // if triggers alerts.
@@ -622,7 +643,12 @@ export default function ChatbotScreen() {
         from: 'user',
         text: text,
       });
-    if (TriggerWords.some((trigger) => text.toLowerCase().includes(trigger.toLowerCase())) && !alerted)
+    if (text.toLowerCase() === 'exit' && !alerted) {
+      setIsAI(false);
+      addMessage(InitialChat);
+      return;
+    }
+    if (matchedTrigger && !alerted)
     {
       setAlerted(true);
       setIsWaiting(true);
@@ -673,7 +699,7 @@ export default function ChatbotScreen() {
       addMessage(InitialChat);
       return;
     }
-    if (alerted && TriggerWords.some((trigger) => text.toLowerCase().includes(trigger.toLowerCase()))) {
+    if (alerted && matchedTrigger) {
       try {
         // ✅ Send alert first
         await axios.post(`${API}/chatbot/${studentID}/alert`);
@@ -735,6 +761,7 @@ export default function ChatbotScreen() {
       text: 'FAQ',
     });
     addMessage(FAQChat);
+    return;
   }
   if (MAIN_MENU.includes(text)) {
     const introText = FAQ_TREE[text]?.intro;
@@ -914,10 +941,13 @@ export default function ChatbotScreen() {
   });
 };
 
-  const ifNotif = (text: string) => {
-    return (text.toLowerCase().trim().includes(('You’ve been disconnected from the guidance office.').toLowerCase()) ||
-    text.toLowerCase().trim().includes(('Someone responded from the guidance office.').toLowerCase()) ||
-    text.toLowerCase().trim().includes(('Your session has expired.').toLowerCase()));
+  const ifNotif = (text: string) =>
+  {
+    return (
+      text.toLowerCase().trim().includes(('You’ve been disconnected from the guidance office.').toLowerCase()) ||
+      text.toLowerCase().trim().includes(('Someone responded from the guidance office.').toLowerCase()) ||
+      text.toLowerCase().trim().includes(('Your session has expired.').toLowerCase())
+    );
   };
 
   return (
@@ -934,67 +964,101 @@ export default function ChatbotScreen() {
         <ScrollView
           ref={scrollRef}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: verticalScale(40) }}
           style={[styles.chatbotContainer, keyboardVisible && { maxHeight: '65%' }]}
         >
-          {messages.map((msg, idx) => (
-            <View
-              key={idx}
-              style={(msg.from === 'bot' || msg.from === 'counselor') ? styles.botChatAlign : msg.from === 'notification' ? styles.notification : styles.userChatAlign}
-            >
-              <View
-                style={(msg.from === 'bot' || msg.from === 'counselor') ? styles.botPictureAlign : styles.userPictureAlign}
-              >
-                {(msg.from !== 'notification' || ifNotif(msg.text)) && (
-                  <Image
-                    source={
-                      msg.from !== 'user'
-                        ? require('../assets/images/appchatbot.png')
-                        : picturePath ? { uri: picturePath }
-                        : require('../assets/images/default_profile.png')
-                    }
-                    style={styles.image}
-                  />
-                )}
-                <View style={((msg.from === 'notification' || msg.text.includes('responded from the')) ? styles.notification : styles.chatWidth)}>
-                  <Text style={((msg.from === 'notification' || msg.text.includes('responded from the')) ? styles.notificationMessage : msg.from === 'user' ? styles.userText : styles.chatbotText)}>{msg.text}</Text>
-                  {msg.options?.map((opt, i) => {
-                    const isMessageSelected = selectedOptionIndex.some((key) => key.startsWith(`${idx}_`));
-                    const isThisOptionSelected = selectedOptionIndex.includes(`${idx}_${i}`);
+          {messages.map((msg, idx) => {
+              // Check if this message should be treated as a notification
+              const isNotification = msg.from === 'notification' || ifNotif(msg.text);
 
-                    return (
-                      <TouchableOpacity
-                        key={i}
-                        style={[
-                          styles.optionBtn,
-                          isThisOptionSelected && styles.optionBtnSelected, // Only the selected button gets styled
-                        ]}
-                        onPress={() => handleUserInput(opt, idx, i)}
-                        disabled={isMessageSelected} // Disable all once any is selected
+              return (
+                <View
+                  key={idx}
+                  style={
+                    isNotification
+                      ? styles.notification
+                      : (msg.from === 'bot' || msg.from === 'counselor')
+                        ? styles.botChatAlign
+                        : styles.userChatAlign
+                  }
+                >
+                  <View
+                    style={
+                      isNotification
+                        ? styles.notificationAlign // New style for notifications
+                        : (msg.from === 'bot' || msg.from === 'counselor')
+                          ? styles.botPictureAlign
+                          : styles.userPictureAlign
+                    }
+                  >
+                    {/* Only show image if NOT a notification */}
+                    {!isNotification && (
+                      <Image
+                        source={
+                          msg.from !== 'user'
+                            ? require('../assets/images/appchatbot.png')
+                            : picturePath
+                              ? { uri: picturePath }
+                              : require('../assets/images/default_profile.png')
+                        }
+                        style={styles.image}
+                      />
+                    )}
+
+                    <View style={isNotification ? styles.notificationWidth : styles.chatWidth}>
+                      <Text
+                        style={
+                          isNotification
+                            ? styles.notificationMessage
+                            : msg.from === 'user'
+                              ? styles.userText
+                              : styles.chatbotText
+                        }
                       >
-                        <Text style={styles.optionText}>{opt}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                        {msg.text}
+                      </Text>
+
+                      {/* Render options if available */}
+                      {msg.options?.map((opt, i) => {
+                        const isMessageSelected = selectedOptionIndex.some((key) => key.startsWith(`${idx}_`));
+                        const isThisOptionSelected = selectedOptionIndex.includes(`${idx}_${i}`);
+
+                        return (
+                          <TouchableOpacity
+                            key={i}
+                            style={[
+                              styles.optionBtn,
+                              isThisOptionSelected && styles.optionBtnSelected,
+                            ]}
+                            onPress={() => handleUserInput(opt, idx, i)}
+                            disabled={isMessageSelected}
+                          >
+                            <Text style={styles.optionText}>{opt}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  </View>
                 </View>
+              );
+            })}
+
+            {isAI && (
+              <View style={styles.aiIndicatorContainer}>
+                <Text style={styles.aiIndicatorText}>
+                  💬 You are chatting with Calmi • Type "exit" to return to menu
+                </Text>
               </View>
-            </View>
-          ))}
-          {(isAI) && (
-            <View style={styles.aiIndicatorContainer}>
-              <Text style={styles.aiIndicatorText}>
-                💬 You are chatting with Calmi • Type "exit" to return to menu
-              </Text>
-            </View>
-          )}
-          {(isAgent && isAgentAvailable) && (
-            <View style={[styles.aiIndicatorContainer, {backgroundColor: '#e8f5e9', borderColor: '#81c784'}]}>
-              <Text style={[styles.aiIndicatorText, {color: '#2e7d32'}]}>
-                👨‍🏫 Connected with guidance counselor • type "exit" to disconnect and return to menu.
-              </Text>
-            </View>
-          )}
-        </ScrollView>
+            )}
+
+            {(isAgent && isAgentAvailable) && (
+              <View style={[styles.aiIndicatorContainer, {backgroundColor: '#e8f5e9', borderColor: '#81c784'}]}>
+                <Text style={[styles.aiIndicatorText, {color: '#2e7d32'}]}>
+                  👨‍🏫 Connected with guidance counselor • type "exit" to disconnect and return to menu.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
 
         <TextInput
           style={[styles.input, { bottom: keyboardVisible ? '2%' : '7%' }]}
@@ -1057,15 +1121,15 @@ const styles = StyleSheet.create({
   },
   titleBox: {
       backgroundColor: '#b7e3cc',
-      paddingVertical: 5,
-      paddingHorizontal: 50,
-      borderRadius: 25,
-      marginTop: 10,
-      marginBottom: 10,
+      paddingVertical: verticalScale(5),
+      paddingHorizontal: scale(50),
+      borderRadius: moderateScale(25),
+      marginTop: verticalScale(10),
+      marginBottom: verticalScale(10),
   },
   title: {
-      fontSize: 15,
-      letterSpacing: 2,
+      fontSize: moderateScale(15),
+      letterSpacing: moderateScale(2),
       fontFamily: 'Poppins-Bold',
       color: 'black',
   },
@@ -1073,18 +1137,18 @@ const styles = StyleSheet.create({
   chatbotContainer: {
     backgroundColor: 'white',
     margin: 20,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+    paddingHorizontal: scale(20),
+    borderRadius: moderateScale(20),
     maxHeight: '73%',
     position: 'relative',
-    paddingTop: 20,
+    paddingTop: verticalScale(20),
   },
   input: {
-    height: 45,
-    borderWidth: 1,
-    marginBottom: 20,
-    paddingHorizontal: 15,
-    borderRadius: 25,
+    height: verticalScale(45),
+    borderWidth: moderateScale(1),
+    marginBottom: verticalScale(20),
+    paddingHorizontal: scale(15),
+    borderRadius: moderateScale(25),
     minWidth: '80%',
     maxWidth: '80%',
     color: '#555',
@@ -1096,18 +1160,18 @@ const styles = StyleSheet.create({
     transform: [{ translateX: -((width * 0.8) / 2) }],
   },
   optionBtn: {
-    borderRadius: 99,
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    marginTop: 5,
-    borderWidth: 3,
+    borderRadius: moderateScale(20),
+    paddingVertical: verticalScale(4),
+    paddingHorizontal: scale(10),
+    marginTop: verticalScale(5),
+    borderWidth: moderateScale(3),
     borderColor: '#d6c9f3',
   },
   optionBtnSelected: {
     backgroundColor: '#d6c9f3',
   },
-  optionText: { fontSize: 12.5, color: '#333', fontFamily: 'Poppins-Regular' },
-  image: {width: 30, height: 30, borderRadius: 9999, borderWidth: 2, borderColor: '#b7e3cc'},
+  optionText: { fontSize: moderateScale(12.5), color: '#333', fontFamily: 'Poppins-Regular' },
+  image: {width: moderateScale(30), height: verticalScale(30), borderRadius: moderateScale(9999), borderWidth: moderateScale(2), borderColor: '#b7e3cc'},
   overlay: {
     flex: 1,
     justifyContent: 'center',
@@ -1116,10 +1180,10 @@ const styles = StyleSheet.create({
   },
   forgotModal: {
     width: '85%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: scale(0), height: verticalScale(3) },
     elevation: 5,
     backgroundColor: 'white',
   },
@@ -1127,76 +1191,82 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     backgroundColor: '#b7e3cc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    borderTopLeftRadius: moderateScale(15),
+    borderTopRightRadius: moderateScale(15),
   },
   redHeader: {
     backgroundColor: '#e3b7b7',
   },
   marginB: {
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   modalTitleStyled: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: '#333',
     fontFamily: 'Poppins-Bold',
   },
   instructions: {
     fontFamily: 'Lora-Bold',
     color: '#4a4a4a',
-    paddingHorizontal: 40,
+    paddingHorizontal: scale(40),
     textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    gap: moderateScale(10),
+    paddingHorizontal: scale(20),
+    paddingBottom: verticalScale(10),
     justifyContent: 'flex-end',
   },
   sendBtn: {
     backgroundColor: '#b7e3cc',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(20),
+    borderRadius: moderateScale(10),
   },
   sendText: {
     color: 'white',
     fontFamily: 'Poppins-ExtraBold',
-    shadowRadius: 3,
-    shadowOffset: {width: 1, height: 1},
+    shadowRadius: moderateScale(3),
+    shadowOffset: {width: scale(1), height: verticalScale(1)},
     shadowColor: 'gray',
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
-  chatbotText: {color: 'black', fontFamily: 'Lora-Bold', textAlignVertical: 'center', fontSize: 13, padding: 5, textAlign: 'left', borderRadius: 10, marginBottom: 10},
-  userText: {color: 'black', fontFamily: 'Lora-Bold', textAlignVertical: 'center', fontSize: 13, borderColor: '#b7e3cc', padding: 5, textAlign: 'right', borderRadius: 10, marginBottom: 10},
-  chatWidth: {width: '65%', marginBottom: 10},
+  chatbotText: {color: 'black', fontFamily: 'Lora-Bold', textAlignVertical: 'center', fontSize: moderateScale(13), padding: moderateScale(5), textAlign: 'left', borderRadius: moderateScale(10), marginBottom: verticalScale(10)},
+  userText: {color: 'black', fontFamily: 'Lora-Bold', textAlignVertical: 'center', fontSize: moderateScale(13), borderColor: '#b7e3cc', padding: moderateScale(5), textAlign: 'right', borderRadius: moderateScale(10), marginBottom: verticalScale(10)},
+  chatWidth: {width: '65%', marginBottom: verticalScale(10)},
   notificationWidth: {width: '90%', textAlign: 'center'},
-  notification: {marginHorizontal: 'auto', marginBottom: 10},
-  notificationMessage: { fontFamily: 'Poppins-SemiBoldItalic', fontSize: 11, color: '#6f6f6f', textAlign: 'center'},
-  userChatAlign: {flex: 1, alignItems: 'flex-end', paddingHorizontal: 10},
-  userPictureAlign: {flexDirection: 'row-reverse', gap: 10},
-  botChatAlign: { flex: 1, alignItems: 'flex-start', paddingHorizontal: 10 },
-  botPictureAlign: {flexDirection: 'row', gap: 10},
+  notification: {marginHorizontal: 'auto', marginBottom: verticalScale(10)},
+  notificationMessage: { fontFamily: 'Poppins-SemiBoldItalic', fontSize: moderateScale(11), color: '#6f6f6f', textAlign: 'center'},
+  userChatAlign: {flex: 1, alignItems: 'flex-end', paddingHorizontal: scale(10)},
+  userPictureAlign: {flexDirection: 'row-reverse', gap: moderateScale(10)},
+  botChatAlign: { flex: 1, alignItems: 'flex-start', paddingHorizontal: scale(10) },
+  botPictureAlign: {flexDirection: 'row', gap: moderateScale(10)},
   aiIndicatorContainer: {
     backgroundColor: '#e3f2fd',
-    borderWidth: 1,
+    borderWidth: moderateScale(1),
     borderColor: '#90caf9',
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    marginBottom: 8,
-    marginTop: 2,
+    borderRadius: moderateScale(8),
+    paddingVertical: verticalScale(6),
+    paddingHorizontal: scale(8),
+    marginBottom: verticalScale(8),
+    marginTop: verticalScale(2),
   },
   aiIndicatorText: {
-    fontSize: 9,
+    fontSize: moderateScale(9),
     color: '#1565c0',
     fontFamily: 'Poppins-MediumItalic',
     textAlign: 'center',
+  },
+  notificationAlign: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
   },
 });

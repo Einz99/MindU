@@ -19,6 +19,7 @@ import Video from 'react-native-video';
 import DrawerComponent from '../../Components/DrawerComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface Wellness {
   ID: number;
@@ -313,37 +314,37 @@ const styles = StyleSheet.create({
   },
   titleBox: {
     backgroundColor: '#b7e3cc',
-    paddingVertical: 10,
-    paddingHorizontal: 50,
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    marginBottom: 20,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(50),
+    borderBottomLeftRadius: moderateScale(25),
+    borderBottomRightRadius: moderateScale(25),
+    marginBottom: verticalScale(20),
     borderBottomEndRadius: 25,
     borderBottomStartRadius: 25,
   },
   title: {
-    fontSize: 15,
-    letterSpacing: 2,
+    fontSize: moderateScale(15),
+    letterSpacing: moderateScale(2),
     fontFamily: 'Poppins-ExtraBold',
     color: 'black',
   },
   MeditationBox: {
     width: '80%',
-    marginBottom: 25,
+    marginBottom: verticalScale(25),
     alignItems: 'center',
   },
   MeditationTitle: {
-    fontSize: 55,
+    fontSize: moderateScale(45),
     fontFamily: 'Lora-Bold',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
     textAlign: 'center',
     color: '#b7e3cc',
     textShadowColor: 'gray',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: scale(2), height: verticalScale(2) },
+    textShadowRadius: moderateScale(2),
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: verticalScale(20),
   },
   grid: {
     flexDirection: 'row',
@@ -353,19 +354,19 @@ const styles = StyleSheet.create({
   },
   item: {
     width: '45%',
-    marginVertical: 10,
+    marginVertical: verticalScale(10),
     alignItems: 'center',
-    padding: 10,
-    borderRadius: 10,
+    padding: moderateScale(10),
+    borderRadius: moderateScale(10),
   },
   image: {
-    width: 150,
-    height: 150,
+    width: scale(150),
+    height: verticalScale(150),
     resizeMode: 'contain',
   },
   itemText: {
-    marginTop: 5,
-    fontSize: 14,
+    marginTop: verticalScale(5),
+    fontSize: moderateScale(14),
     fontWeight: 'bold',
     fontFamily: 'Lora-Regular',
     color: 'black',
@@ -375,10 +376,10 @@ const styles = StyleSheet.create({
   },
   articleDetailContainer: {
       position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0, // Allows bottom tab bar to remain visible
+      top: verticalScale(0),
+      left: scale(0),
+      right: scale(0),
+      bottom: verticalScale(0), // Allows bottom tab bar to remain visible
       backgroundColor: 'white',
       zIndex: 100,
   },
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
   },
   VideoView: {
       width: '100%',
-      height: 250,
+      height: verticalScale(250),
   },
   Video: {
       width: '100%',
@@ -405,26 +406,26 @@ const styles = StyleSheet.create({
   VideoText: {
     width: '100%',
     height: '100%',
-    paddingHorizontal: 20,
+    paddingHorizontal: scale(20),
   },
   articleTitle: {
-    fontSize: 50,
+    fontSize: moderateScale(50),
     fontFamily: 'Poppins-Regular',
     color: 'black',
   },
   articleDate: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
     color: 'grey',
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
     fontFamily: 'Lora-Regular',
   },
   articleDesc: {
-    fontSize: 15,
+    fontSize: moderateScale(15),
     textAlign: 'justify',
     fontFamily: 'Lora-SemiBold',
     color: 'black',
   },
-  backButton: {position: 'absolute', zIndex: 10, top: 20, right: 10},
-  lefted: {left: 10, right: 0},
+  backButton: {position: 'absolute', zIndex: 10, top: verticalScale(20), right: scale(10)},
+  lefted: {left: scale(10), right: scale(0)},
   loading: {color: 'black', fontFamily: 'Lora-Regular', textAlign: 'center'},
 });

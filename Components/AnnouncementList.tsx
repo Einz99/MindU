@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextStyle,
 } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface Announcement {
   ID: number;
@@ -52,23 +53,23 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
     // Define category style with proper TypeScript typing
     const categoryStyle: TextStyle = {
       color: getCategoryColor(item.category),
-      padding: 4,
-      borderRadius: 4,
+      padding: moderateScale(4),
+      borderRadius: moderateScale(4),
       alignSelf: 'flex-start',
       opacity: 0.7,
-      marginBottom: 5,
+      marginBottom: verticalScale(5),
       textShadowColor: 'gray', // Shadow color
       textShadowOffset: { height: 1, width: 1 }, // Increased the shadow offset
-      textShadowRadius: 0.2, // Added a shadow radius for better blur effect
+      textShadowRadius: moderateScale(0.2), // Added a shadow radius for better blur effect
       position: 'absolute',
       top: -15,
-      right: 0,
+      right: scale(0),
       fontFamily: 'Poppins-Regular',
-      fontSize: 10,
+      fontSize: moderateScale(10),
     };
 
     return (
-      <View style={styles.outerAnnounceItem} key={index}>
+      <View style={[styles.outerAnnounceItem, { backgroundColor: getCategoryColor(item.category)}]} key={index}>
         <View style={styles.announcementItem}>
           <View style={styles.categoryContainer}>
             <View>
@@ -86,9 +87,14 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
   };
 
   return (
-      <ScrollView contentContainerStyle={styles.listContent}>
-        {announcements.map((item, index) => renderItem(item, index))}
-      </ScrollView>
+    <ScrollView
+      contentContainerStyle={[
+        styles.listContent,
+        announcements.length <= 2 && styles.shortList, {/* ✅ Add conditional style */},
+      ]}
+    >
+      {announcements.map((item, index) => renderItem(item, index))}
+    </ScrollView>
   );
 };
 
@@ -99,7 +105,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingVertical: 30,
+    paddingVertical: verticalScale(30),
   },
   loaderContainer: {
     flex: 1,
@@ -112,20 +118,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: 16,
+    fontSize: moderateScale(16),
     color: 'gray',
   },
-  outerAnnounceItem: { backgroundColor: 'orange', borderRadius: 20, marginBottom: 20 },
+  outerAnnounceItem: { backgroundColor: 'orange', borderRadius: moderateScale(20), marginBottom: verticalScale(20) },
   announcementItem: {
     height: 140,  // Fixed height for all items
     backgroundColor: 'white',
-    borderRadius: 15,
-    padding: 16,
-    marginVertical: 8,
+    borderRadius: moderateScale(15),
+    padding: moderateScale(16),
+    marginVertical: verticalScale(8),
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: moderateScale(0), height: 3 },
     shadowOpacity: 0.2,
-    shadowRadius: 8,
+    shadowRadius: moderateScale(8),
     elevation: 5,
     position: 'relative',
   },
@@ -135,27 +141,31 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: moderateScale(12),
     fontWeight: 'bold',
   },
   announcementTitleText: {
-    fontSize: 22,
+    fontSize: moderateScale(22),
     fontFamily: 'Poppins-Bold',
-    marginBottom: 0,
+    marginBottom: verticalScale(0),
     color: '#333',
   },
   announcementContent: {
-    fontSize: 14,
+    fontSize: moderateScale(14),
     color: '#555',
     flex: 1,
     fontFamily: 'Lora-Regular',
   },
   announcementDate: {
-    fontSize: 8,
+    fontSize: moderateScale(8),
     color: 'gray',
     position: 'absolute',
-    bottom: 10,
-    right: 15,
+    bottom: verticalScale(10),
+    right: scale(15),
     fontFamily: 'Lora-Regular',
+  },
+  shortList: {
+    paddingVertical: verticalScale(10), // ✅ Less padding for short lists
+    flexGrow: 0, // ✅ Don't expand to fill space
   },
 });

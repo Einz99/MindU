@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import { io } from 'socket.io-client';
 import axios from 'axios';
 import { API, RootAPI } from '../apiConfigs';
@@ -87,23 +88,23 @@ export default function HomepageScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, marginBottom: 20 },
+  title: { fontSize: moderateScale(24), marginBottom: verticalScale(20) },
   resourcesContainer: {
     width: '90%',
     backgroundColor: '#f9f9f9',
-    padding: 10,
-    borderRadius: 10,
+    padding: moderateScale(10),
+    borderRadius: moderateScale(10),
     maxHeight: '50%',
   },
-  resourcesTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 10 },
-  resourceItem: { marginBottom: 10, padding: 10, backgroundColor: '#fff', borderRadius: 5 },
+  resourcesTitle: { fontSize: moderateScale(20), fontWeight: 'bold', marginBottom: verticalScale(10) },
+  resourceItem: { marginBottom: verticalScale(10), padding: moderateScale(10), backgroundColor: '#fff', borderRadius: moderateScale(5) },
   resourceTitle: { fontWeight: 'bold' },
   button: {
     backgroundColor: 'red',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginTop: 20,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(20),
+    borderRadius: moderateScale(5),
+    marginTop: verticalScale(20),
   },
-  buttonText: { color: '#fff', fontSize: 16 },
+  buttonText: { color: '#fff', fontSize: moderateScale(16) },
 });

@@ -2,11 +2,13 @@ import { NavigatorScreenParams } from '@react-navigation/native';
 
 export type BottomTabParamList = {
   Home: undefined;
-  Resources: undefined;
-  Wellness: undefined;
+  Resources: NavigatorScreenParams<ResourcesStackParamList>; // ✅ Changed
   Chatbot: undefined;
+  Wellness: NavigatorScreenParams<WellnessStackParamList>; // ✅ Changed
   Mood: undefined;
+  Settings?: undefined; // If Settings is inside BottomTabs
 };
+
 
 export type ResourcesStackParamList = {
   ResourcesMain: undefined;

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types';
 import { View, StyleSheet, Text, Modal, TouchableOpacity, ScrollView, TextInput } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import HomepageTop from '../Components/HomepageTop';
 import axios from 'axios';
 import AnnouncementList from '../Components/AnnouncementList';
@@ -57,7 +58,7 @@ export default function HomepageScreen() {
         });
         if (response.data && response.data.user) {
           setID(response.data.user.id);
-          setName(response.data.user.name);
+          setName(response.data.user.firstName + ' ' + response.data.user.lastName);
         } else {
           setIsSuccessful(false);
           setMessageError('Server Error: Unable to connect. Please try again.');
@@ -183,6 +184,13 @@ export default function HomepageScreen() {
         setIsSuccessful(true);
         setMessageError('Successfully requested appointment with guidance office. Please wait for schedule.');
         setAlertModal(true);
+
+        // Log student activity for the Scheduler module
+        try {
+          await axios.post(`${API}/student-activities/insert`, { module: 'Scheduler' });
+        } catch (err) {
+          console.error('Error logging student activity:', err);
+        }
       } else {
         setIsSuccessful(false);
         setMessageError('Server Error: Unable to connect. Please try again.');
@@ -306,7 +314,7 @@ export default function HomepageScreen() {
                   disabled={loading}
                   onPress={sendBacklogRequest}
                 >
-                  <Text style={styles.sendText}>{loading ? 'Requesting...' : 'Send request'}</Text>
+                  <Text style={styles.sendText}>{loading ? 'Sending...' : 'Send'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -320,12 +328,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    marginBottom: 50,
   },
   moodHistory: {
     width: '95%',
     height: '15%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     backgroundColor: '#b7e3cc',
     marginLeft: 'auto',
     marginRight: 'auto',
@@ -334,23 +341,22 @@ const styles = StyleSheet.create({
   },
   announcement: {
     width: '90%',
-    minHeight: 375,
-    maxHeight: 375,
+    maxHeight: verticalScale(375),
     marginLeft: 'auto',
     marginRight: 'auto',
-    borderRadius: 15,
-    padding: 10,
+    borderRadius: moderateScale(15),
+    padding: moderateScale(10),
     position: 'relative',
   },
   announcementTitle: {
-    fontSize: 33,
+    fontSize: moderateScale(33),
     fontFamily: 'Poppins-Bold',
     textDecorationLine: 'underline',
     textAlign: 'center',
     color: '#b7e3cc',
     textShadowColor: 'grey',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowOffset: { width: scale(1), height: verticalScale(1) },
+    textShadowRadius: moderateScale(2),
   },
   announcementTitleCont: {
     alignItems: 'center',
@@ -363,10 +369,10 @@ const styles = StyleSheet.create({
   },
   forgotModal: {
     width: '85%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: scale(0), height: verticalScale(3) },
     elevation: 5,
     backgroundColor: 'white',
   },
@@ -374,71 +380,71 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     backgroundColor: '#b7e3cc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    borderTopLeftRadius: moderateScale(15),
+    borderTopRightRadius: moderateScale(15),
   },
   redHeader: {
     backgroundColor: '#e3b7b7',
   },
   marginB: {
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   modalTitleStyled: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: '#333',
     fontFamily: 'Poppins-Bold',
   },
   instructions: {
     fontFamily: 'Lora-Bold',
     color: '#4a4a4a',
-    paddingHorizontal: 40,
+    paddingHorizontal: scale(40),
     textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    gap: moderateScale(10),
+    paddingHorizontal: scale(20),
+    paddingBottom: verticalScale(10),
     justifyContent: 'flex-end',
   },
   sendBtn: {
     backgroundColor: '#b7e3cc',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(20),
+    borderRadius: moderateScale(10),
   },
   sendText: {
     color: 'white',
     fontFamily: 'Poppins-ExtraBold',
-    shadowRadius: 3,
-    shadowOffset: {width: 1, height: 1},
+    shadowRadius: moderateScale(3),
+    shadowOffset: {width: scale(1), height: verticalScale(1)},
     shadowColor: 'gray',
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
-  RequestBox: { borderColor: '#da2f47',backgroundColor: 'white', borderWidth: 2, borderRadius: 20, marginBottom: 10, paddingVertical: 20, paddingHorizontal: 15, width: '85%', marginHorizontal: 'auto', marginTop: 20},
-  RequestTitle: { fontFamily: 'Poppins-Bold', color: '#317873', fontSize: 21},
+  RequestBox: { borderColor: '#da2f47',backgroundColor: 'white', borderWidth: 2, borderRadius: moderateScale(20), marginBottom: verticalScale(80), paddingVertical: verticalScale(20), paddingHorizontal: scale(15), width: '85%', marginHorizontal: 'auto', marginTop: verticalScale(20)},
+  RequestTitle: { fontFamily: 'Poppins-Bold', color: '#317873', fontSize: moderateScale(21)},
   RequestSubtitle: { fontFamily: 'Lora-Bold', color: '#777'},
-  RequestBtn: { backgroundColor: '#f57c00', width: '40%', marginTop: 10, borderRadius: 25, paddingVertical: 5, paddingHorizontal: 20},
+  RequestBtn: { backgroundColor: '#f57c00', width: '40%', marginTop: 10, borderRadius: moderateScale(25), paddingVertical: verticalScale(5), paddingHorizontal: scale(20)},
   RequestBtnText: { color: 'white', textAlign: 'center', textAlignVertical: 'center', fontFamily: 'Poppins-Bold'},
   RequestModal: {
     width: '85%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: scale(0), height: verticalScale(3) },
     elevation: 5,
     backgroundColor: 'white',
   },
   Label: {color: 'black', fontFamily: 'Poppins-Bold'},
-  ModalContentBlock: {paddingHorizontal: 20},
-  input: {backgroundColor: '#F5F5F5', borderRadius: 10, paddingHorizontal: 10, color: 'black'},
-  messageBox: {marginBottom: 20},
-  backButton: {position: 'absolute', zIndex: 10, top: 20, right: 10},
+  ModalContentBlock: {paddingHorizontal: scale(20)},
+  input: {backgroundColor: '#F5F5F5', borderRadius: moderateScale(10), paddingHorizontal: scale(10), color: 'black'},
+  messageBox: {marginBottom: verticalScale(20)},
+  backButton: {position: 'absolute', zIndex: 10, top: verticalScale(20), right: scale(10)},
   overlay2: {
     flex: 1,
     justifyContent: 'center',
@@ -447,10 +453,10 @@ const styles = StyleSheet.create({
   },
   forgotModal2: {
     width: '85%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: scale(0), height: verticalScale(3) },
     elevation: 5,
     backgroundColor: 'white',
   },
@@ -458,20 +464,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     backgroundColor: '#b7e3cc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    borderTopLeftRadius: moderateScale(15),
+    borderTopRightRadius: moderateScale(15),
   },
   forgotActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: moderateScale(10),
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 15,
-    marginRight: 20,
+    marginBottom: verticalScale(15),
+    marginRight: scale(20),
   },
   backText: {
     color: 'gray',

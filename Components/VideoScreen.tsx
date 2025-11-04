@@ -9,6 +9,7 @@ import {
     Image,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 interface Resource {
     ID: number;
@@ -121,7 +122,9 @@ export default function VideoScreen({
                             <Ionicons name="play-circle" size={40} color="gray" style={styles.playIcon}/>
                         </View>
                         <View style={styles.VideoTitle}>
-                            <Text style={styles.resoureTitle}>{resource.title}</Text>
+                            <Text style={styles.resoureTitle}>
+                              {resource.title.length > 20 ? `${resource.title.substring(0, 20)}...` : resource.title}
+                            </Text>
                             <Text style={styles.resoureDate}>{new Date(resource.modified_at).toLocaleDateString()}</Text>
                         </View>
                       </View>
@@ -135,15 +138,15 @@ export default function VideoScreen({
 const styles = StyleSheet.create({
     titleBox: {
       backgroundColor: '#d6c9f3',
-      paddingVertical: 10,
-      paddingHorizontal: 50,
-      borderBottomLeftRadius: 25,
-      borderBottomRightRadius: 25,
-      marginBottom: 20,
+      paddingVertical: verticalScale(10),
+      paddingHorizontal: scale(50),
+      borderBottomLeftRadius: moderateScale(25),
+      borderBottomRightRadius: moderateScale(25),
+      marginBottom: verticalScale(20),
     },
     title: {
-      fontSize: 15,
-      letterSpacing: 2,
+      fontSize: moderateScale(15),
+      letterSpacing: moderateScale(2),
       fontFamily: 'Poppins-ExtraBold',
       color: 'black',
     },
@@ -151,69 +154,71 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       width: '90%',
-      borderWidth: 1,
+      borderWidth: moderateScale(1),
       borderColor: '#d6c9f3',
-      borderRadius: 25,
+      borderRadius: moderateScale(25),
       backgroundColor: '#fff',
       overflow: 'hidden',
     },
     categoriesContainer: {
       width: '90%',
-      marginBottom: 20,
+      marginBottom: verticalScale(20),
     },
     input: {
       flex: 1,
-      height: 40,
-      fontSize: 16,
+      height: verticalScale(40),
+      fontSize: moderateScale(16),
       color: '#333',
-      paddingHorizontal: 10,
+      paddingHorizontal: scale(10),
     },
     iconContainer: {
       backgroundColor: '#d6c9f3',
-      padding: 5,
-      marginRight: 5,
-      borderRadius: 25,
+      padding: moderateScale(5),
+      marginRight: scale(5),
+      borderRadius: moderateScale(25),
       justifyContent: 'center',
       alignItems: 'center',
     },
     articleBox: {
-        borderWidth: 4, // Border thickness
+        borderWidth: moderateScale(4), // Border thickness
         borderColor: '#d6c9f3', // Border color
-        borderRadius: 25, // Optional: Rounded corners
+        borderRadius: moderateScale(25), // Optional: Rounded corners
         backgroundColor: '#fff', // Keep background transparent if needed
         width: '80%',
-        height: '10%',
+        height: '12%',
         justifyContent: 'center',
-        marginBottom: 20,
-        marginRight: 40,
+        marginBottom: verticalScale(20),
+        marginRight: scale(40),
     },
     leftAlignTitle: {
         textAlign: 'left',
-        paddingLeft: 20,
-        fontSize: 25,
+        paddingLeft: scale(20),
+        fontSize: moderateScale(25),
         fontFamily: 'Lora-SemiBold',
         color: 'black',
     },
     list: {
       width: '90%',
       backgroundColor: 'transparent',
+      height: '90%',
+      marginBottom: verticalScale(60),
     },
     boxColor: {
       backgroundColor: '#fff59d',
-      borderRadius: 25,
+      borderRadius: moderateScale(25),
       position: 'relative',
-      marginBottom: 25,
-      height: 200,
+      marginBottom: verticalScale(25),
+      height: verticalScale(200),
     },
     categoryText: {
-      fontSize: 14,
+      fontSize: moderateScale(14),
       color: '#666',
-      marginBottom: 4,
+      marginBottom: verticalScale(4),
     },
     separator: {
-      height: 1,
+      height: verticalScale(1),
       backgroundColor: '#EEEEEE',
-      marginVertical: 8,
+      marginVertical: verticalScale(8),
     },
     contentContainer: {
       flexDirection: 'row',
@@ -224,21 +229,21 @@ const styles = StyleSheet.create({
       width: '100%',
       height: '100%',
       backgroundColor: 'transparent',
-      borderRadius: 25,
+      borderRadius: moderateScale(25),
     },
     VideoBanner: {
       width: '100%',
       height: '70%',
       backgroundColor: 'white',
       position: 'relative',
-      borderTopRightRadius: 25,
-      borderTopLeftRadius: 25,
+      borderTopRightRadius: moderateScale(25),
+      borderTopLeftRadius: moderateScale(25),
     },
     VideoImage: {
       width: '100%',
       height: '100%',
-      borderTopRightRadius: 25,
-      borderTopLeftRadius: 25,
+      borderTopRightRadius: moderateScale(25),
+      borderTopLeftRadius: moderateScale(25),
     },
     playIcon: {
       position: 'absolute',
@@ -247,10 +252,10 @@ const styles = StyleSheet.create({
       transform: [{ translateX: -12.5 }, { translateY: -12.5}],
     },
     VideoTitle: {
-      paddingHorizontal: 15,
+      paddingHorizontal: scale(15),
     },
     resoureTitle: {
-      fontSize: 20,
+      fontSize: moderateScale(20),
       fontFamily: 'Poppins-SemiBold',
       color: 'black',
     },
@@ -258,26 +263,26 @@ const styles = StyleSheet.create({
         color: 'gray',
         fontFamily: 'Lora-Regular',
     },
-    contentContainerStyle: { paddingHorizontal: 10, paddingVertical: 10 },
-    horizontalScroll: { width: '100%', marginBottom: 20 },
+    contentContainerStyle: { paddingHorizontal: scale(10), paddingVertical: verticalScale(10) },
+    horizontalScroll: { width: '100%', marginBottom: verticalScale(20) },
     categoryButton: {
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 20,
-      marginRight: 10,
-      minWidth: 100,
+      paddingHorizontal: scale(20),
+      paddingVertical: verticalScale(10),
+      borderRadius: moderateScale(20),
+      marginRight: scale(10),
+      minWidth: scale(100),
       alignItems: 'center',
       justifyContent: 'center',
       borderColor: '#fff59d',
     },
-    categoryButtonText: { fontSize: 14, fontWeight: '600', color: '#333', fontFamily: 'Lora-Regular' },
+    categoryButtonText: { fontSize: moderateScale(14), fontWeight: '600', color: '#333', fontFamily: 'Lora-Regular' },
     Image: {
         width: '60%',
         height: '180%',
         position: 'absolute',
     },
     imageRight: {
-        top: -40,
+        top: verticalScale(-40),
         right: '-25%',
     },
     loading: {color: 'black', fontFamily: 'Lora-Regular', textAlign: 'center'},

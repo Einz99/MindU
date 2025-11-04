@@ -10,7 +10,13 @@ const Stack = createNativeStackNavigator<ResourcesStackParamList>();
 
 export default function ResourcesNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="ResourcesMain">
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }}
+      initialRouteName="ResourcesMain"
+      >
       <Stack.Screen name="ResourcesMain" component={ResourcesMainScreen} />
       <Stack.Screen name="ArticlesList" component={ArticlesListScreen} />
       <Stack.Screen name="VideosList" component={VideosListScreen} />

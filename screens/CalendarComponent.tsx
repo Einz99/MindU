@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Modal } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import axios from 'axios';
 import { API, RootAPI } from '../apiConfigs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -282,6 +283,7 @@ export default function CalendarComponent() {
                                             ? styles.selectedDay
                                             : null,
                                         ]}
+                                        disabled={dayIndex === 0 || dayIndex === 6}
                                         onPress={() => handleDayPress(day)}
                                       >
                                         {hasScheduledBacklog(day.day, day.month, day.year) && (
@@ -290,7 +292,7 @@ export default function CalendarComponent() {
                                         <Text
                                           style={[
                                             styles.dayText,
-                                            dayIndex === 0 ? styles.sundayText : null,
+                                            (dayIndex === 0 || dayIndex === 6) ? styles.sundayText : null,
                                             !day.isCurrentMonth ? styles.otherMonthDayText : null,
                                           ]}
                                         >
@@ -363,35 +365,35 @@ export default function CalendarComponent() {
             </View>
 
             <Modal visible={alertModal} animationType="fade" transparent>
-          <View style={styles.overlay}>
-            <View style={styles.forgotModal}>
-              <View style={[styles.modalHeader, !isSuccessful && styles.redHeader]}>
-                <Text style={styles.modalTitleStyled}>{isSuccessful ? 'Successful' : 'Error'}</Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    setAlertModal(false);
-                    setMessageError('');
-                    setIsSuccessful(false);
-                  }}>
-                  <Ionicons name="close" size={22} color="#333" />
-                </TouchableOpacity>
-              </View>
-              <Text style={[styles.instructions, styles.marginB]}>{messageError}</Text>
-              <View style={styles.actions}>
-                <TouchableOpacity
-                      style={[styles.sendBtn, !isSuccessful && styles.redHeader]}
+              <View style={styles.overlay}>
+                <View style={styles.forgotModal}>
+                  <View style={[styles.modalHeader, !isSuccessful && styles.redHeader]}>
+                    <Text style={styles.modalTitleStyled}>{isSuccessful ? 'Successful' : 'Error'}</Text>
+                    <TouchableOpacity
                       onPress={() => {
                         setAlertModal(false);
                         setMessageError('');
                         setIsSuccessful(false);
-                      }}
-                    >
-                      <Text style={styles.sendText}>OK</Text>
+                      }}>
+                      <Ionicons name="close" size={22} color="#333" />
                     </TouchableOpacity>
+                  </View>
+                  <Text style={[styles.instructions, styles.marginB]}>{messageError}</Text>
+                  <View style={styles.actions}>
+                    <TouchableOpacity
+                          style={[styles.sendBtn, !isSuccessful && styles.redHeader]}
+                          onPress={() => {
+                            setAlertModal(false);
+                            setMessageError('');
+                            setIsSuccessful(false);
+                          }}
+                        >
+                          <Text style={styles.sendText}>OK</Text>
+                        </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            </View>
-          </View>
-        </Modal>
+            </Modal>
         </View>
     );
 }
@@ -403,15 +405,15 @@ const styles = StyleSheet.create({
     },
     titleBox: {
         backgroundColor: '#b7e3cc',
-        paddingVertical: 5,
-        paddingHorizontal: 50,
-        borderRadius: 25,
-        marginTop: 10,
-        marginBottom: 10,
+        paddingVertical: verticalScale(5),
+        paddingHorizontal: scale(50),
+        borderRadius: moderateScale(25),
+        marginTop: verticalScale(10),
+        marginBottom: verticalScale(10),
     },
     title: {
-        fontSize: 15,
-        letterSpacing: 2,
+        fontSize: moderateScale(15),
+        letterSpacing: moderateScale(2),
         fontFamily: 'Poppins-Bold',
         color: 'black',
     },
@@ -420,15 +422,15 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
     },
     header: {
-        padding: 12,
+        padding: moderateScale(12),
         alignItems: 'center',
         position: 'relative',
     },
     yearText: {
-      fontSize: 25,
+      fontSize: moderateScale(25),
       fontFamily: 'Lora-Bold',
       color: '#444',
-      marginBottom: 8,
+      marginBottom: verticalScale(8),
     },
     monthNavigator: {
       flexDirection: 'row',
@@ -437,22 +439,22 @@ const styles = StyleSheet.create({
       width: '100%',
       paddingHorizontal: '10%',
       backgroundColor: '#4b946a',
-      borderTopLeftRadius: 10,
-      borderTopRightRadius: 10,
+      borderTopLeftRadius: moderateScale(10),
+      borderTopRightRadius: moderateScale(10),
     },
     navButton: {
-      padding: 8,
+      padding: moderateScale(8),
       textAlignVertical: 'center',
-      marginBottom: 10,
+      marginBottom: verticalScale(10),
     },
     navButtonText: {
-      fontSize: 18,
+      fontSize: moderateScale(18),
       color: '#333',
     },
     monthContainer: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      borderRadius: 4,
+      paddingVertical: verticalScale(8),
+      paddingHorizontal: scale(16),
+      borderRadius: moderateScale(4),
       width: '70%',
     },
     monthText: {
@@ -462,46 +464,46 @@ const styles = StyleSheet.create({
     },
     calendar: {
       backgroundColor: '#cfe8d5',
-      padding: 12,
-      borderBottomRightRadius: 10,
-      borderBottomLeftRadius: 10,
+      padding: moderateScale(12),
+      borderBottomRightRadius: moderateScale(10),
+      borderBottomLeftRadius: moderateScale(10),
       width: '100%',
       margin: -5,
       shadowColor: 'grey',
-      shadowOffset: {width: 0, height: -2},
-      shadowRadius: 2,
+      shadowOffset: {width: scale(0), height: -2},
+      shadowRadius: moderateScale(2),
     },
     daysHeader: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginBottom: 8,
-      paddingBottom: 8,
+      marginBottom: verticalScale(8),
+      paddingBottom: verticalScale(8),
     },
     dayName: {
-      width: 30,
+      width: moderateScale(30),
       textAlign: 'center',
       fontFamily: 'Poppins-Bold',
       color: '#333',
-      fontSize: 12,
+      fontSize: moderateScale(12),
     },
     daysGrid: {},
     week: {
       flexDirection: 'row',
       justifyContent: 'space-around',
-      marginVertical: 6,
+      marginVertical: verticalScale(6),
     },
     day: {
-      width: 30,
-      height: 30,
+      width: moderateScale(30),
+      height: moderateScale(30),
       justifyContent: 'center',
       alignItems: 'center',
-      borderRadius: 15,
+      borderRadius: moderateScale(15),
     },
     highlightedDay: {
       backgroundColor: '#2c8059',
     },
     dayText: {
-      fontSize: 14,
+      fontSize: moderateScale(14),
       color: '#333',
       fontFamily: 'Lora-Regular',
     },
@@ -519,34 +521,35 @@ const styles = StyleSheet.create({
       color: '#aaa',
     },
     ScheduleListContainer: {
-      marginTop: 10,
+      marginTop: verticalScale(10),
       width: '100%',
       alignItems: 'center',
     },
     ScheduleList: {
         width: '90%',
         backgroundColor: '#cfe8d5',
-        borderRadius: 10,
+        borderRadius: moderateScale(10),
+        maxHeight: moderateScale(180),
     },
-    NoSchedule: { flexDirection: 'row', alignItems: 'center', padding: 25 },
-    marginRight: { marginRight: 15, color: 'black' },
-    NoScheduleTitle: { fontSize: 30, fontFamily: 'Poppins-Bold', color: 'black' },
-    NoScheduleDate: { fontSize: 14, color: 'gray', fontFamily: 'Lora-Regular' },
-    padding10: { padding: 10 },
-    Scheduled: {flexDirection: 'row', alignItems: 'center', marginBottom: 20},
-    LeftSection: {paddingHorizontal: 10, borderRightWidth: 2, borderColor: 'gray', marginRight: 10},
-    ScheduledTitle: {fontFamily: 'Poppins-Bold', fontSize: 25, letterSpacing: 5, color: 'black'},
-    ScheduledSubtitle: {fontSize: 12, fontFamily: 'Lora-Regular', color: 'black'},
+    NoSchedule: { flexDirection: 'row', alignItems: 'center', padding: moderateScale(25) },
+    marginRight: { marginRight: scale(15), color: 'black' },
+    NoScheduleTitle: { fontSize: moderateScale(30), fontFamily: 'Poppins-Bold', color: 'black' },
+    NoScheduleDate: { fontSize: moderateScale(14), color: 'gray', fontFamily: 'Lora-Regular' },
+    padding10: { padding: moderateScale(10) },
+    Scheduled: {flexDirection: 'row', alignItems: 'center', marginBottom: verticalScale(20)},
+    LeftSection: {paddingHorizontal: scale(10), borderRightWidth: moderateScale(2), borderColor: 'gray', marginRight: scale(10)},
+    ScheduledTitle: {fontFamily: 'Poppins-Bold', fontSize: moderateScale(25), letterSpacing: moderateScale(5), color: 'black'},
+    ScheduledSubtitle: {fontSize: moderateScale(12), fontFamily: 'Lora-Regular', color: 'black'},
     dotIndicator: {
-        width: 7,
-        height: 7,
-        borderRadius: 3,
+        width: moderateScale(7),
+        height: moderateScale(7),
+        borderRadius: moderateScale(3),
         backgroundColor: '#ffb028', // or any color you want
         position: 'absolute',
-        top: 2,
+        top: verticalScale(-2),
       },
       backlogScroll: {
-        height: 125,
+        height: verticalScale(125),
       },
       backlogWrapper: {
         alignItems: 'center',
@@ -554,27 +557,27 @@ const styles = StyleSheet.create({
       backlogItem: {
         backgroundColor: 'white',
         width: '95%',
-        borderRadius: 10,
-        padding: 10,
+        borderRadius: moderateScale(10),
+        padding: moderateScale(10),
         flexDirection: 'row',
-        marginBottom: 25,
+        marginBottom: verticalScale(25),
       },
       backlogTime: {
         width: '20%',
-        borderRightWidth: 2,
+        borderRightWidth: moderateScale(2),
         borderRightColor: 'gray',
-        paddingRight: 5,
+        paddingRight: scale(5),
       },
       backlogTimeText: {
         fontFamily: 'Poppins-Bold',
-        fontSize: 18,
+        fontSize: moderateScale(20),
         textAlign: 'center',
         color: 'black',
       },
       backlogContent: {
         width: '80%',
         position: 'relative',
-        paddingLeft: 10,
+        paddingLeft: scale(10),
         justifyContent: 'center',
       },
       eventTag: {
@@ -585,7 +588,7 @@ const styles = StyleSheet.create({
       },
       backlogName: {
         fontFamily: 'Poppins-ExtraBold',
-        fontSize: 20,
+        fontSize: moderateScale(20),
         textAlignVertical: 'center',
         color: 'black',
       },
@@ -597,10 +600,10 @@ const styles = StyleSheet.create({
   },
   forgotModal: {
     width: '85%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: scale(0), height: verticalScale(3) },
     elevation: 5,
     backgroundColor: 'white',
   },
@@ -608,50 +611,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     backgroundColor: '#b7e3cc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    borderTopLeftRadius: moderateScale(15),
+    borderTopRightRadius: moderateScale(15),
   },
   redHeader: {
     backgroundColor: '#e3b7b7',
   },
   marginB: {
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   modalTitleStyled: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: '#333',
     fontFamily: 'Poppins-Bold',
   },
   instructions: {
     fontFamily: 'Lora-Bold',
     color: '#4a4a4a',
-    paddingHorizontal: 40,
+    paddingHorizontal: scale(40),
     textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    gap: moderateScale(10),
+    paddingHorizontal: scale(20),
+    paddingBottom: verticalScale(10),
     justifyContent: 'flex-end',
   },
   sendBtn: {
     backgroundColor: '#b7e3cc',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(20),
+    borderRadius: moderateScale(10),
   },
   sendText: {
     color: 'white',
     fontFamily: 'Poppins-ExtraBold',
-    shadowRadius: 3,
-    shadowOffset: {width: 1, height: 1},
+    shadowRadius: moderateScale(3),
+    shadowOffset: {width: scale(1), height: verticalScale(1)},
     shadowColor: 'gray',
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
 });

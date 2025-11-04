@@ -1,13 +1,13 @@
 // ForgotPasswordScreen.tsx
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Modal, StyleSheet, Image, Dimensions, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import axios from 'axios';
 import { RootStackParamList } from '../../types';
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { API } from '../../apiConfigs';
 import { useRoute, RouteProp } from '@react-navigation/native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -174,32 +174,32 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'Poppins-ExtraBold',
-    fontSize: 30,
+    fontSize: moderateScale(30),
     textAlign: 'center',
     color: '#b7e3cc',
-    letterSpacing: 3,
-    marginBottom: 15,
+    letterSpacing: moderateScale(3),
+    marginBottom: verticalScale(15),
   },
   input: {
-    height: 50,
+    height: verticalScale(50),
     borderColor: '#888',
-    borderWidth: 1,
-    paddingHorizontal: 15,
-    borderRadius: 8,
-    fontSize: 16,
+    borderWidth: moderateScale(1),
+    paddingHorizontal: scale(15),
+    borderRadius: moderateScale(8),
+    fontSize: moderateScale(16),
     backgroundColor: 'white',
     color: 'black',
     fontFamily: 'Lora-Regular',
   },
   inputField: {
-    marginBottom: 8,
+    marginBottom: verticalScale(8),
     position: 'relative',
   },
   button: {
     backgroundColor: '#fff59d',
-    paddingVertical: 15,
-    borderRadius: 5,
-    marginTop: 10,
+    paddingVertical: verticalScale(15),
+    borderRadius: moderateScale(5),
+    marginTop: verticalScale(10),
     alignItems: 'center',
     width: '75%',
     textAlign: 'center',
@@ -207,16 +207,16 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#6d6e71',
-    fontSize: 16,
+    fontSize: moderateScale(16),
     fontFamily: 'Poppins-Bold',
   },
-  bg: { position: 'absolute', top: 0, width: width, height: height },
+  bg: { position: 'absolute', top: verticalScale(0), width: width, height: height, resizeMode: 'contain' },
   textInputCont: {
     width: width,
-    padding: 75,
+    padding: moderateScale(75),
     justifyContent: 'center',
     position: 'absolute',
-    top: 30,
+    top: verticalScale(30),
   },
   disabledInput: {
     backgroundColor: '#f0f0f0',
@@ -228,12 +228,12 @@ const styles = StyleSheet.create({
   errorpasswordhint: {
     color: '#ed5450',
     textAlign: 'left',
-    fontSize: 10,
+    fontSize: moderateScale(10),
     fontFamily: 'Lora-Regular',
   },
   visibilityIcon: {
     position: 'absolute',
-    right: 10,
+    right: scale(10),
     top: '30%',
   },
   overlay: {
@@ -244,10 +244,10 @@ const styles = StyleSheet.create({
   },
   forgotModal: {
     width: '85%',
-    borderRadius: 15,
+    borderRadius: moderateScale(15),
     shadowColor: '#000',
     shadowOpacity: 0.3,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: scale(0), height: verticalScale(3) },
     elevation: 5,
     backgroundColor: 'white',
   },
@@ -255,50 +255,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: verticalScale(20),
     backgroundColor: '#b7e3cc',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(10),
+    borderTopLeftRadius: moderateScale(15),
+    borderTopRightRadius: moderateScale(15),
   },
   redHeader: {
     backgroundColor: '#e3b7b7',
   },
   marginB: {
-    marginBottom: 10,
+    marginBottom: verticalScale(10),
   },
   modalTitleStyled: {
-    fontSize: 18,
+    fontSize: moderateScale(18),
     color: '#333',
     fontFamily: 'Poppins-Bold',
   },
   instructions: {
     fontFamily: 'Lora-Bold',
     color: '#4a4a4a',
-    paddingHorizontal: 40,
+    paddingHorizontal: scale(40),
     textAlign: 'center',
   },
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 20,
-    paddingBottom: 10,
+    gap: moderateScale(10),
+    paddingHorizontal: scale(20),
+    paddingBottom: verticalScale(10),
     justifyContent: 'flex-end',
   },
   sendBtn: {
     backgroundColor: '#b7e3cc',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(20),
+    borderRadius: moderateScale(10),
   },
   sendText: {
     color: 'white',
     fontFamily: 'Poppins-ExtraBold',
-    shadowRadius: 3,
-    shadowOffset: {width: 1, height: 1},
+    shadowRadius: moderateScale(3),
+    shadowOffset: {width: scale(1), height: verticalScale(1)},
     shadowColor: 'gray',
-    fontSize: 15,
+    fontSize: moderateScale(15),
   },
 });

@@ -16,6 +16,7 @@ export default function DebugScreen() {
   };
 
   return (
+    // eslint-disable-next-line react-native/no-inline-styles
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Button title="Clear AsyncStorage" onPress={clearStorage} />
     </View>

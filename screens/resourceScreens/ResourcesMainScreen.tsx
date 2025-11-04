@@ -9,6 +9,7 @@ import {
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { ResourcesStackParamList } from '../../types';
 import DrawerComponent from '../../Components/DrawerComponent';
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 
 export default function ResourcesMainScreen() {
     const navigation = useNavigation<NavigationProp<ResourcesStackParamList>>();
@@ -56,64 +57,64 @@ const styles = StyleSheet.create({
     },
     titleBox: {
         backgroundColor: '#b7e3cc',
-        paddingVertical: 5,
-        paddingHorizontal: 50,
-        borderRadius: 25,
-        marginTop: 10,
-        marginBottom: 80,
+        paddingVertical: verticalScale(5),
+        paddingHorizontal: scale(50),
+        borderRadius: moderateScale(25),
+        marginTop: verticalScale(10),
+        marginBottom: verticalScale(80),
     },
     title: {
-        fontSize: 15,
-        letterSpacing: 2,
+        fontSize: moderateScale(15),
+        letterSpacing: moderateScale(2),
         fontFamily: 'Poppins-Bold',
         color: 'black',
     },
     articleBox: {
-        borderWidth: 4, // Border thickness
+        borderWidth: moderateScale(4), // Border thickness
         borderColor: '#fff59d', // Border color
-        borderRadius: 25, // Optional: Rounded corners
+        borderRadius: moderateScale(25), // Optional: Rounded corners
         backgroundColor: '#fff', // Keep background transparent if needed
         width: '75%',
         height: '15%',
         justifyContent: 'center',
-        marginBottom: 75,
+        marginBottom: verticalScale(60),
         position: 'relative',
-        marginLeft: 40,
+        marginLeft: scale(40),
     },
     videoBox: {
-        borderWidth: 4, // Border thickness
+        borderWidth: moderateScale(4), // Border thickness
         borderColor: '#d6c9f3', // Border color
-        borderRadius: 25, // Optional: Rounded corners
+        borderRadius: moderateScale(25), // Optional: Rounded corners
         backgroundColor: '#fff', // Keep background transparent if needed
         width: '75%',
         height: '15%',
         justifyContent: 'center',
-        marginBottom: 75,
-        marginRight: 40,
+        marginBottom: verticalScale(60),
+        marginRight: scale(40),
         position: 'relative',
     },
     crisisBox: {
-        borderWidth: 4, // Border thickness
+        borderWidth: moderateScale(4), // Border thickness
         borderColor: '#d9534f', // Border color
-        borderRadius: 25, // Optional: Rounded corners
+        borderRadius: moderateScale(25), // Optional: Rounded corners
         backgroundColor: '#fff', // Keep background transparent if needed
         width: '75%',
         height: '15%',
         justifyContent: 'center',
         position: 'relative',
-        marginLeft: 40,
+        marginLeft: scale(40),
     },
     rightAlignTitle: {
         textAlign: 'right',
-        paddingRight: 20,
-        fontSize: 25,
+        paddingRight: scale(20),
+        fontSize: moderateScale(25),
         fontFamily: 'Lora-Bold',
         color: 'black',
     },
     leftAlignTitle: {
         textAlign: 'left',
-        paddingLeft: 20,
-        fontSize: 25,
+        paddingLeft: scale(20),
+        fontSize: moderateScale(25),
         fontFamily: 'Lora-Bold',
         color: 'black',
     },

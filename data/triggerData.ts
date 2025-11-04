@@ -1,7 +1,7 @@
 export const TriggerWords = [
     'I feel like giving up.',
     'I\'m so tired of everything.',
-    'I want to disappear.',
+    'I want to disappear',
     'give up',
     'suicide',
     'kill myself',

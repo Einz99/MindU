@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -9,7 +9,7 @@ import {
     Image,
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-
+import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 interface Resource {
     ID: number;
     title: string;
@@ -46,6 +46,7 @@ export default function ArticleScreen({
     onSelectResource,
     categoryColors,
   }: ArticleScreenProps) {
+    const [fallbackImage, setFallbackImage] = useState(false);
     return(
         <>
             <View style={styles.titleBox}>
@@ -128,15 +129,27 @@ export default function ArticleScreen({
                           {/* Right side with image and date */}
                           <View style={styles.rightContent}>
                             <View style={styles.bannerContainer}>
-                              {resource.banner && (
+                              <View style={styles.bannerContainer}>
                                 <Image
                                   source={{
-                                    uri: resource.banner ? `${RootAPI}${resource.banner}` : '../../assets/images/MUIcon.png',
+                                    uri: `${RootAPI}${resource.banner}`,
                                   }}
                                   style={styles.bannerImage}
                                   resizeMode="cover"
+                                  onError={() => {
+                                    // Handle error (e.g., image file is missing or corrupted)
+                                    setFallbackImage(true); // Switch to fallback image
+                                  }}
                                 />
-                              ) }
+                                {/* Fallback image if there is an error */}
+                                {fallbackImage && (
+                                  <Image
+                                    source={require('../assets/images/MUIcon.png')}
+                                    style={styles.bannerImage}
+                                    resizeMode="cover"
+                                  />
+                                )}
+                              </View>
                             </View>
                             <Text style={styles.dateText}>
                               {new Date(resource.modified_at).toLocaleDateString()}
@@ -154,15 +167,15 @@ export default function ArticleScreen({
 const styles = StyleSheet.create({
     titleBox: {
       backgroundColor: '#fff59d',
-      paddingVertical: 10,
-      paddingHorizontal: 50,
-      borderBottomLeftRadius: 25,
-      borderBottomRightRadius: 25,
-      marginBottom: 20,
+      paddingVertical: verticalScale(10),
+      paddingHorizontal: scale(50),
+      borderBottomLeftRadius: moderateScale(25),
+      borderBottomRightRadius: moderateScale(25),
+      marginBottom: verticalScale(20),
     },
     title: {
-      fontSize: 15,
-      letterSpacing: 2,
+      fontSize: moderateScale(15),
+      letterSpacing: moderateScale(2),
       fontFamily: 'Poppins-Bold',
       color: 'black',
     },
@@ -170,47 +183,47 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       width: '90%',
-      borderWidth: 1,
+      borderWidth: moderateScale(1),
       borderColor: '#fff59d',
-      borderRadius: 25,
+      borderRadius: moderateScale(25),
       backgroundColor: '#fff',
       overflow: 'hidden',
     },
     categoriesContainer: {
       width: '90%',
-      marginBottom: 20,
+      marginBottom: verticalScale(20),
     },
     input: {
       flex: 1,
-      height: 40,
-      fontSize: 16,
+      height: verticalScale(40),
+      fontSize: moderateScale(16),
       color: '#333',
-      paddingHorizontal: 10,
+      paddingHorizontal: scale(10),
     },
     iconContainer: {
       backgroundColor: '#fff59d',
-      padding: 5,
-      marginRight: 5,
-      borderRadius: 25,
+      padding: moderateScale(5),
+      marginRight: scale(5),
+      borderRadius: moderateScale(25),
       justifyContent: 'center',
       alignItems: 'center',
     },
     articleBox: {
-        borderWidth: 4, // Border thickness
+        borderWidth: moderateScale(4), // Border thickness
         borderColor: '#fff59d', // Border color
-        borderRadius: 25, // Optional: Rounded corners
+        borderRadius: moderateScale(25), // Optional: Rounded corners
         backgroundColor: '#fff', // Keep background transparent if needed
         width: '80%',
-        height: '10%',
+        height: '12%',
         justifyContent: 'center',
-        marginBottom: 20,
+        marginBottom: verticalScale(20),
         position: 'relative',
-        marginLeft: 40,
+        marginLeft: scale(40),
     },
     rightAlignTitle: {
         textAlign: 'right',
-        paddingRight: 20,
-        fontSize: 25,
+        paddingRight: scale(20),
+        fontSize: moderateScale(25),
         fontFamily: 'Lora-Bold',
         color: 'black',
     },
@@ -218,24 +231,24 @@ const styles = StyleSheet.create({
       width: '90%',
       backgroundColor: 'transparent',
       height: '90%',
-      marginBottom: 100,
+      marginBottom: verticalScale(60),
     },
     boxColor: {
       backgroundColor: '#fff59d',
-      borderRadius: 25,
+      borderRadius: moderateScale(25),
       position: 'relative',
-      marginBottom: 25,
-      height: 150,
+      marginBottom: verticalScale(25),
+      height: verticalScale(150),
     },
     categoryText: {
-      fontSize: 15,
+      fontSize: moderateScale(15),
       color: '#666',
-      marginBottom: 4,
+      marginBottom: verticalScale(4),
       fontFamily: 'Lora-Regular',
     },
     separator: {
-      height: 2,
-      marginVertical: 8,
+      height: verticalScale(2),
+      marginVertical: verticalScale(8),
     },
     contentContainer: {
       flexDirection: 'row',
@@ -244,33 +257,33 @@ const styles = StyleSheet.create({
     },
     titleArea: {
       flex: 1,
-      paddingRight: 10,
+      paddingRight: scale(10),
       justifyContent: 'flex-start',
     },
     resourceTitle: {
-      marginTop: 3,
-      fontSize: 22.5,
+      marginTop: verticalScale(3),
+      fontSize: moderateScale(22.5),
       fontFamily: 'Poppins-ExtraBold',
       color: '#000',
-      lineHeight: 24,
-      letterSpacing: 3,
+      lineHeight: verticalScale(24),
+      letterSpacing: moderateScale(3),
     },
     rightContent: {
-      width: 100,
+      width: scale(100),
       justifyContent: 'space-between',
       alignItems: 'flex-end',
     },
     bannerContainer: {
-      width: 100,
-      height: 70,
-      borderRadius: 8,
+      width: scale(100),
+      height: verticalScale(70),
+      borderRadius: moderateScale(8),
       overflow: 'hidden',
       backgroundColor: '#f0f0f0',
     },
     bannerImage: {
       width: '100%',
       height: '100%',
-      borderRadius: 15,
+      borderRadius: moderateScale(15),
     },
     placeholderImage: {
       width: '100%',
@@ -283,53 +296,53 @@ const styles = StyleSheet.create({
     },
     cloud: {
       position: 'absolute',
-      top: 10,
-      left: 10,
-      width: 20,
-      height: 10,
+      top: verticalScale(10),
+      left: scale(10),
+      width: scale(20),
+      height: verticalScale(10),
       backgroundColor: 'white',
-      borderRadius: 10,
+      borderRadius: moderateScale(10),
     },
     groundSection: {
       flex: 1,
       backgroundColor: '#90d67f',
     },
     dateText: {
-      fontSize: 12,
+      fontSize: moderateScale(12),
       color: '#999',
-      marginTop: 4,
+      marginTop: verticalScale(4),
       fontFamily: 'Lora-Regular',
     },
     box: {
       width: '99%',
       height: '99%',
       backgroundColor: 'white',
-      borderRadius: 25,
-      padding: 16, // Increased padding for better spacing
+      borderRadius: moderateScale(25),
+      padding: moderateScale(16), // Increased padding for better spacing
       position: 'absolute',
       top: -5,
       left: -5,
     },
-    contentContainerStyle: { paddingHorizontal: 10, paddingVertical: 10 },
-    horizontalScroll: { width: '100%', marginBottom: 20 },
+    contentContainerStyle: { paddingHorizontal: scale(10), paddingVertical: verticalScale(10) },
+    horizontalScroll: { width: '100%', marginBottom: verticalScale(20) },
     categoryButton: {
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      borderRadius: 20,
-      marginRight: 10,
-      minWidth: 100,
+      paddingHorizontal: scale(20),
+      paddingVertical: verticalScale(10),
+      borderRadius: moderateScale(20),
+      marginRight: scale(10),
+      minWidth: scale(100),
       alignItems: 'center',
       justifyContent: 'center',
       borderColor: '#fff59d',
     },
-    categoryButtonText: { fontSize: 14, fontFamily: 'Lora-Regular', color: '#333' },
+    categoryButtonText: { fontSize: moderateScale(14), fontFamily: 'Lora-Regular', color: '#333' },
     Image: {
         width: '60%',
         height: '180%',
         position: 'absolute',
     },
     imageLeft: {
-        top: -40,
+        top: verticalScale(-40),
         left: '-25%',
     },
     loading: {color: 'black', fontFamily: 'Lora-Regular', textAlign: 'center'},

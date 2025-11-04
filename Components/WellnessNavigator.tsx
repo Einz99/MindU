@@ -10,7 +10,10 @@ const Stack = createNativeStackNavigator<WellnessStackParamList>();
 export default function WellnessNavigator() {
   return (
     <Stack.Navigator
-      screenOptions={{ headerShown: false }}
+      screenOptions={{
+        headerShown: false,
+        animation: 'slide_from_right',
+      }}
       initialRouteName="Wellnesses"
     >
       <Stack.Screen name="Wellnesses" component={WellnessScreen} />
