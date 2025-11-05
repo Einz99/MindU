@@ -20,6 +20,7 @@ import DrawerComponent from '../../Components/DrawerComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import apiClient from '../../APIClient';
 
 interface Wellness {
   ID: number;
@@ -48,6 +49,8 @@ export default function MeditationScreen() {
   const [selectedWellnessId, setSelectedWellnessId] = useState<number | null>(null);
   const [fullScreen, setFullScreen] = useState(false);
   const [slideAnim] = useState(new Animated.Value(1000));
+
+  const [studentID, setStudentID] = useState<number>(0);
 
   const { width, height } = useWindowDimensions();
 
@@ -152,7 +155,7 @@ export default function MeditationScreen() {
 
     try {
       // Log student activity for the Wellness module
-      await axios.post(`${API}/student-activities/insert`, { module: 'Wellness' });
+      await axios.post(`${API}/student-activities/${studentID}/insert`, { module: 'Wellness' });
     } catch (err) {
       console.error('Error logging student activity:', err);
     }
@@ -201,6 +204,26 @@ export default function MeditationScreen() {
     hour: '2-digit',
     minute: '2-digit',
   };
+
+  useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          const token = await AsyncStorage.getItem('userToken');
+          const response = await apiClient.get(`${API}/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.data?.user) {
+            setStudentID(response.data.user.id);
+          } else {
+            setStudentID(0);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setStudentID(0);
+        }
+      };
+      fetchUserData();
+    }, []);
 
   return (
     <View style={styles.container}>

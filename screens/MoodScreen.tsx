@@ -289,7 +289,7 @@ export default function MoodScreen() {
 
         try {
           // Log student activity for the Wellness module
-          await axios.post(`${API}/student-activities/insert`, { module: 'Mood' });
+          await axios.post(`${API}/student-activities/${studentID}/insert`, { module: 'Mood' });
         } catch (err) {
           console.error('Error logging student activity:', err);
         }

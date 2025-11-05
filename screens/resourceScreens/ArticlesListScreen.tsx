@@ -18,6 +18,8 @@ import { WebView } from 'react-native-webview';
 import DrawerComponent from '../../Components/DrawerComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiClient from '../../APIClient';
 
 interface Resource {
   ID: number;
@@ -52,6 +54,8 @@ export default function ArticleList() {
     const [slideAnim] = useState(new Animated.Value(1000)); // Start off-screen
     const [webViewHeight, setWebViewHeight] = useState(0);
 
+    const [studentID, setStudentID] = useState<number>(0);
+
     const handleSearch = (text: string) => {
       setQuery(text);
     };
@@ -66,7 +70,7 @@ export default function ArticleList() {
 
       try {
         // Log student activity for the Resource module
-        await axios.post(`${API}/student-activities/insert`, { module: 'Resource' });
+        await axios.post(`${API}/student-activities/${studentID}/insert`, { module: 'Resource' });
       } catch (err) {
         console.error('Error logging student activity:', err);
       }
@@ -165,6 +169,26 @@ export default function ArticleList() {
         hour: '2-digit',
         minute: '2-digit',
     };
+
+    useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          const token = await AsyncStorage.getItem('userToken');
+          const response = await apiClient.get(`${API}/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.data?.user) {
+            setStudentID(response.data.user.id);
+          } else {
+            setStudentID(0);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setStudentID(0);
+        }
+      };
+      fetchUserData();
+    }, []);
 
     const article = resources.find((resource) => resource.ID === selectedResourceId);
 

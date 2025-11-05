@@ -210,7 +210,7 @@ export default function BottomBarNavComponent() {
   const handleOpenGame = async () => {
     setOpenGameConfirm(false);
     try {
-      await axios.post(`${API}/student-activities/insert`, { module: 'Pet' });
+      await axios.post(`${API}/student-activities/${studentID}/insert`, { module: 'Pet' });
     } catch (err) {
       console.error('Error logging student activity:', err);
     }

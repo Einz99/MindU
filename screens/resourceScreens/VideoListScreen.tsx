@@ -19,6 +19,8 @@ import DrawerComponent from '../../Components/DrawerComponent';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import apiClient from '../../APIClient';
 
 interface Resource {
   ID: number;
@@ -55,6 +57,8 @@ export default function VideoList() {
 
     const { width, height } = useWindowDimensions();
 
+    const [studentID, setStudentID] = useState<number>(0);
+
     const handleSearch = (text: string) => {
       setQuery(text);
     };
@@ -69,7 +73,7 @@ export default function VideoList() {
 
       try {
         // Log student activity for the Resource module
-        await axios.post(`${API}/student-activities/insert`, { module: 'Resource' });
+        await axios.post(`${API}/student-activities/${studentID}/insert`, { module: 'Resource' });
       } catch (err) {
         console.error('Error logging student activity:', err);
       }
@@ -180,6 +184,26 @@ export default function VideoList() {
             Orientation.lockToPortrait(); // Lock back to portrait when exiting fullscreen
         }
     };
+
+    useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          const token = await AsyncStorage.getItem('userToken');
+          const response = await apiClient.get(`${API}/user`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (response.data?.user) {
+            setStudentID(response.data.user.id);
+          } else {
+            setStudentID(0);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          setStudentID(0);
+        }
+      };
+      fetchUserData();
+    }, []);
 
     return (
       <View style={styles.container}>

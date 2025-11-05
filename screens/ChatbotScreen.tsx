@@ -43,12 +43,6 @@ const InitialChat: Message = {
   options: ['FAQ', 'Chat with me', 'Connect to guidance'],
 };
 
-const FAQChat: Message = {
-  from: 'bot',
-  text: 'Hello there! Calmi here. What can I do for you?',
-  options: [...MAIN_MENU, 'Go back'],
-};
-
 const { width } = Dimensions.get('window');
 
 export default function ChatbotScreen() {
@@ -76,7 +70,67 @@ export default function ChatbotScreen() {
     const [selectedOptionIndex, setSelectedOptionIndex] = useState<string[]>([]);
     const [alerted, setAlerted] = useState(false);
 
+    const [allFAQs, setAllFAQs] = useState<any[]>([]);
+    const [faqCategories, setFaqCategories] = useState<string[]>(MAIN_MENU); // Use static as default
+    const [currentCategory, setCurrentCategory] = useState<string | null>(null);
+
+    const [triggerWordsBE, setTriggerWords] = useState<string[]>(TriggerWords);
+
+    // 2. ADD HELPER FUNCTIONS (add after your state declarations, before useEffects)
+    const getQuestionsByCategory = (category: string) => {
+      return allFAQs.filter(faq => faq.category === category);
+    };
+
+    const getAnswerByQuestion = (category: string, question: string) => {
+      const faq = allFAQs.find(
+        f => f.category === category && f.question === question
+      );
+      return faq ? faq.answer : null;
+    };
+
+    const fetchAllFAQs = async () => {
+      try {
+        const response = await axios.get(`${API}/chatbotSettings/active`);
+        if (response.data.success && response.data.faqs.length > 0) {
+          setAllFAQs(response.data.faqs);
+
+          // Extract unique categories
+          const categories = [...new Set(response.data.faqs.map((faq: any) => faq.category))] as string[];
+          setFaqCategories(categories);
+
+          console.log('✅ FAQs loaded from database:', response.data.faqs.length);
+        } else {
+          console.log('⚠️ No FAQs in database, using static data');
+        }
+      } catch (error) {
+        console.error('Error fetching FAQs:', error);
+        console.log('⚠️ Using static FAQ data as fallback');
+      }
+    };
+
+    const fetchAllTriggerWords = async () => {
+      try {
+        const response = await axios.get(`${API}/chatbotSettings/posted`);
+        if (response.data.success && response.data.triggers.length > 0) {
+          const triggers = response.data.triggers.map((item: any) => item.chatTriggers);
+          setTriggerWords(triggers);
+          console.log('✅ Trigger words loaded from database:', triggers.length);
+        } else {
+          console.log('⚠️ No trigger words in database, using static data');
+        }
+      } catch (error) {
+        console.error('Error fetching trigger words:', error);
+        console.log('⚠️ Using static trigger words as fallback');
+      }
+    };
+
     // =================== Fetching Datas
+
+    useEffect(() => {
+      fetchAllFAQs();
+      fetchAllTriggerWords();
+    }, []);
+
     useEffect(() => {
       const fetchUserData = async () => {
         try {
@@ -327,51 +381,50 @@ export default function ChatbotScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [socketRef.current, studentID, alerted]);
 
-// Replace the existing agent-disconnection useEffect with this:
-useEffect(() => {
-  if (!socketRef.current || !studentID) {return;}
+    // Replace the existing agent-disconnection useEffect with this:
+    useEffect(() => {
+      if (!socketRef.current || !studentID) {return;}
 
-  const handleAgentDisconnection = async (data: { student_id: number; }) => {
-    console.log('👋 Received agent-disconnection event:', data);
-    console.log('Current studentID:', studentID);
-    console.log('Event student_id:', data.student_id);
+      const handleAgentDisconnection = async (data: { student_id: number; }) => {
+        console.log('👋 Received agent-disconnection event:', data);
+        console.log('Current studentID:', studentID);
+        console.log('Event student_id:', data.student_id);
 
-    // ✅ VERIFY this disconnection is for THIS student
-    if (data.student_id === studentID) {
-      console.log('✅ Disconnection confirmed for this student');
-      // Add initial menu back
-      addMessage(InitialChat);
+        // ✅ VERIFY this disconnection is for THIS student
+        if (data.student_id === studentID) {
+          console.log('✅ Disconnection confirmed for this student');
+          // Add initial menu back
+          addMessage(InitialChat);
 
-      // Reset all states
-      setIsAI(false);
-      setIsAgent(false);
-      setIsAgentAvailable(false);
-      setIsWaiting(false);
-      setAlerted(false);
+          // Reset all states
+          setIsAI(false);
+          setIsAgent(false);
+          setIsAgentAvailable(false);
+          setIsWaiting(false);
+          setAlerted(false);
 
-      // Clear saved states from AsyncStorage
-      try {
-        await AsyncStorage.setItem('isWaiting', JSON.stringify(false));
-        await AsyncStorage.setItem('isAlerted', JSON.stringify(false));
-        console.log('✅ Cleared saved states');
-      } catch (error) {
-        console.error('Error clearing saved states:', error);
-      }
-    } else {
-      console.log('⏭️ Disconnection not for this student - ignoring');
-    }
-  };
+          // Clear saved states from AsyncStorage
+          try {
+            await AsyncStorage.setItem('isWaiting', JSON.stringify(false));
+            await AsyncStorage.setItem('isAlerted', JSON.stringify(false));
+            console.log('✅ Cleared saved states');
+          } catch (error) {
+            console.error('Error clearing saved states:', error);
+          }
+        } else {
+          console.log('⏭️ Disconnection not for this student - ignoring');
+        }
+      };
 
-  socketRef.current.on('agent-disconnection', handleAgentDisconnection);
+      socketRef.current.on('agent-disconnection', handleAgentDisconnection);
 
-  return () => {
-    if (socketRef.current) {
-      console.log('🧹 Cleaning up agent-disconnection listener');
-      socketRef.current.off('agent-disconnection', handleAgentDisconnection); // ✅ CORRECT EVENT NAME
-    }
-  };
-}, [studentID]); // ✅ Include studentID as dependency
-
+      return () => {
+        if (socketRef.current) {
+          console.log('🧹 Cleaning up agent-disconnection listener');
+          socketRef.current.off('agent-disconnection', handleAgentDisconnection); // ✅ CORRECT EVENT NAME
+        }
+      };
+    }, [studentID]); // ✅ Include studentID as dependency
 
     // Listen for new chat messages
     useEffect(() => {
@@ -530,13 +583,19 @@ useEffect(() => {
     };
   }, [lastMessageTime, isAgent, isWaiting, studentID, alerted]);
 
+  const FAQChat: Message = {
+    from: 'bot',
+    text: 'Hello there! Calmi here. What can I do for you?',
+    options: [...faqCategories, 'Go back'],
+  };
+
   // Handle user input and manage interaction flow
   const handleUserInput = async (text: string, idx: number | null, i: number | null) => {
   if (!text.trim()) {return;}
 
   // Log student activity for the Chatbot module
   try {
-    await axios.post(`${API}/student-activities/insert`, { module: 'Chatbot' });
+    await axios.post(`${API}/student-activities/${studentID}/insert`, { module: 'Chatbot' });
   } catch (err) {
     console.error('Error logging student activity:', err);
   }
@@ -635,7 +694,7 @@ useEffect(() => {
     return;
   }
   const normalizedText = text.toLowerCase();
-  const matchedTrigger = TriggerWords.find(trigger => normalizedText.includes(trigger.toLowerCase()));
+  const matchedTrigger = triggerWordsBE.find(trigger => normalizedText.includes(trigger.toLowerCase()));
   // If in AI mode
   if (isAI) {
     // if triggers alerts.
@@ -763,50 +822,88 @@ useEffect(() => {
     addMessage(FAQChat);
     return;
   }
-  if (MAIN_MENU.includes(text)) {
-    const introText = FAQ_TREE[text]?.intro;
-    const options = Object.keys(FAQ_TREE[text]?.questions || {});
-    addMessage({
-      from: 'user',
-      text: text,
-    });
-    addMessage({
-      from: 'bot',
-      text: introText || 'I am here to help! Please choose a question below.',
-      options: options,
-      topic: text,
-    });
+  // Check if category selected
+  if (faqCategories.includes(text)) {
+    const questions = getQuestionsByCategory(text);
+
+    // If database has FAQs, use them; otherwise fallback to static
+    if (questions.length > 0) {
+      addMessage({
+        from: 'user',
+        text: text,
+      });
+      addMessage({
+        from: 'bot',
+        text: `What do you want to know about ${text}?`,
+        options: questions.map(q => q.question),
+        topic: text,
+      });
+      setCurrentCategory(text);
+    } else {
+      // Fallback to static FAQ_TREE
+      const introText = FAQ_TREE[text]?.intro;
+      const options = Object.keys(FAQ_TREE[text]?.questions || {});
+      addMessage({
+        from: 'user',
+        text: text,
+      });
+      addMessage({
+        from: 'bot',
+        text: introText || 'I am here to help! Please choose a question below.',
+        options: options,
+        topic: text,
+      });
+      setCurrentCategory(text);
+    }
     return;
   }
-  if (lastBot?.topic && FAQ_TREE[lastBot.topic]?.questions[text]) {
-    const answer = FAQ_TREE[lastBot.topic].questions[text];
-    const remaining = Object.keys(FAQ_TREE[lastBot.topic].questions).filter(
-      (q) => q !== text
-    );
-    addMessage({
-      from: 'user',
-      text: text,
-    });
-    addMessage({
-      from: 'bot',
-      text: answer,
-      options: [
-        ...(remaining.length > 0 ? ['Ask more about the topic'] : []),
-        'Ask about a different topic',
-        'End the conversation',
-      ],
-      topic: lastBot.topic,
-      lastQ: text,
-    });
-    return;
+  if (lastBot?.topic && currentCategory) {
+    // Try database first
+    let answer = getAnswerByQuestion(currentCategory, text);
+    let allQuestionsInCategory = getQuestionsByCategory(currentCategory);
+
+    // Fallback to static if not in database
+    if (!answer && FAQ_TREE[currentCategory]?.questions[text]) {
+      answer = FAQ_TREE[currentCategory].questions[text];
+      allQuestionsInCategory = Object.keys(FAQ_TREE[currentCategory].questions).map(q => ({ question: q }));
+    }
+
+    if (answer) {
+      const remaining = allQuestionsInCategory.filter(q => q.question !== text);
+
+      addMessage({
+        from: 'user',
+        text: text,
+      });
+      addMessage({
+        from: 'bot',
+        text: answer,
+        options: [
+          ...(remaining.length > 0 ? ['Ask more about the topic'] : []),
+          'Ask about a different topic',
+          'End the conversation',
+        ],
+        topic: currentCategory,
+        lastQ: text,
+      });
+      return;
+    }
   }
   if (text === 'Ask more about the topic') {
     const topic = messages.filter((m) => m.topic).slice(-1)[0]?.topic;
     if (topic) {
       const lastQ = messages.filter((m) => m.lastQ).slice(-1)[0]?.lastQ;
-      const remaining = Object.keys(FAQ_TREE[topic].questions).filter(
-        (q) => q !== lastQ
-      );
+
+      // Try database first
+      let allQuestionsInCategory = getQuestionsByCategory(topic);
+
+      // Fallback to static
+      if (allQuestionsInCategory.length === 0 && FAQ_TREE[topic]) {
+        allQuestionsInCategory = Object.keys(FAQ_TREE[topic].questions).map(q => ({ question: q }));
+      }
+
+      const remaining = allQuestionsInCategory.filter(q => q.question !== lastQ);
+
       addMessage({
         from: 'user',
         text: text,
@@ -814,12 +911,14 @@ useEffect(() => {
       addMessage({
         from: 'bot',
         text: 'Sure! Here are your choices again:',
-        options: [...remaining, 'Go back'],
+        options: [...remaining.map(q => q.question), 'Go back'],
         topic,
       });
+      setCurrentCategory(topic);
     }
     return;
   }
+
   if (text === 'Ask about a different topic') {
     addMessage({
       from: 'user',
@@ -828,15 +927,18 @@ useEffect(() => {
     addMessage({
       from: 'bot',
       text: 'No problem! Let\'s go back to the main menu. Please choose a new topic below:',
-      options: MAIN_MENU,
+      options: faqCategories,
     });
+    setCurrentCategory(null);
     return;
   }
+
   if (text === 'End the conversation') {
-      addMessage({
-        from: 'bot',
-        text: 'Thanks for chatting with me! 🌟 Come back anytime.',
+    addMessage({
+      from: 'bot',
+      text: 'Thanks for chatting with me! 🌟 Come back anytime.',
     });
+    setCurrentCategory(null);
     setTimeout(() => {
       if (isFocused) {
         addMessage(InitialChat);
@@ -849,10 +951,7 @@ useEffect(() => {
     return;
   }
   if (text === 'Go back') {
-  // Find the LAST bot message with options (before the current one)
     const botMessagesWithOptions = messages.filter((m) => m.from === 'bot' && m.options && m.options.length > 0);
-
-    // Get the second-to-last one (skip the current message that has "Go back")
     const lastBotWithOptions = botMessagesWithOptions[botMessagesWithOptions.length - 2] || botMessagesWithOptions[botMessagesWithOptions.length - 1];
 
     if (lastBotWithOptions) {
@@ -861,10 +960,8 @@ useEffect(() => {
         text: 'Go back',
       });
 
-      // Check if 'Go back' is already in the options
       const hasGoBack = lastBotWithOptions.options?.includes('Go back');
 
-      // Create new message with the same content
       addMessage({
         from: 'bot',
         text: lastBotWithOptions.text,
@@ -874,6 +971,13 @@ useEffect(() => {
         topic: lastBotWithOptions.topic,
         lastQ: lastBotWithOptions.lastQ,
       });
+
+      // Update current category based on what we're going back to
+      if (lastBotWithOptions.topic) {
+        setCurrentCategory(lastBotWithOptions.topic);
+      } else if (lastBotWithOptions.text === 'Hello there! Calmi here. What can I do for you?') {
+        setCurrentCategory(null);
+      }
     }
     return;
   }

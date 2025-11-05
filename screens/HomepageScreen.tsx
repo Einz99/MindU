@@ -187,7 +187,7 @@ export default function HomepageScreen() {
 
         // Log student activity for the Scheduler module
         try {
-          await axios.post(`${API}/student-activities/insert`, { module: 'Scheduler' });
+          await axios.post(`${API}/student-activities/${ID}}insert`, { module: 'Scheduler' });
         } catch (err) {
           console.error('Error logging student activity:', err);
         }
