@@ -693,8 +693,18 @@ export default function ChatbotScreen() {
     }
     return;
   }
-  const normalizedText = text.toLowerCase();
-  const matchedTrigger = triggerWordsBE.find(trigger => normalizedText.includes(trigger.toLowerCase()));
+
+  // Strip ALL punctuation, spaces, and convert to lowercase for comparison
+  const normalizedText = text.toLowerCase().replace(/[.,!?;:'"()\-\s]/g, '');
+
+  const matchedTrigger = triggerWordsBE.find(trigger => {
+    // Also normalize the trigger word the same way
+    const normalizedTrigger = trigger.toLowerCase().replace(/[.,!?;:'"()\-\s]/g, '');
+
+    // Check if trigger appears anywhere in the text (even as part of another word)
+    return normalizedText.includes(normalizedTrigger);
+  });
+
   // If in AI mode
   if (isAI) {
     // if triggers alerts.

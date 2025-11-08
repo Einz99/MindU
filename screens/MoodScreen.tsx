@@ -14,7 +14,7 @@ type MoodDataItem = {
         mood: string | null;
         moodIndex: number | null;
         barHeight: number;
-        animatedHeight: Animated.Value; // Add this new property for animation
+        animatedHeight: Animated.Value;
     };
 export default function MoodScreen() {
     const [name, setName] = useState('');
@@ -22,7 +22,7 @@ export default function MoodScreen() {
     const [moodData, setMoodData] = useState<MoodDataItem[]>([]);
     const [studentID, setStudentID] = useState(0);
     const [moodHistory, setMoodHistory] = useState(
-        Array(7).fill({ emoji: '', label: '' }) // initialize 7 days
+        Array(7).fill({ emoji: '', label: '', dayName: '', dateStr: '' })
     );
     const [monthlyMoodCounts, setMonthlyMoodCounts] = useState<number[]>([]);
     const [modalVisible, setModalVisible] = useState(false);
@@ -33,7 +33,7 @@ export default function MoodScreen() {
     const [reloadKey, setReloadKey] = useState(0);
 
     const resetPage = () => {
-      setReloadKey(prev => prev + 1); // Change reloadKey to trigger useEffect
+      setReloadKey(prev => prev + 1);
     };
 
     const months = [
@@ -56,6 +56,39 @@ export default function MoodScreen() {
       const mood = moods.find((m) => m.label === label);
       return mood ? mood.emoji : '';
     }, [moods]);
+
+    // Helper function to get last 7 days including today
+    const getLast7Days = () => {
+      const days = [];
+      const currentday = new Date();
+      currentday.setHours(0, 0, 0, 0);
+
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(currentday);
+        date.setDate(currentday.getDate() - i);
+        days.push(date);
+      }
+      return days;
+    };
+
+    // // Helper function to get current week (Sun-Sat)
+    // const getCurrentWeek = () => {
+    //   const days = [];
+    //   const today = new Date();
+    //   today.setHours(0, 0, 0, 0);
+
+    //   // Get Sunday of current week
+    //   const sunday = new Date(today);
+    //   sunday.setDate(today.getDate() - today.getDay());
+
+    //   // Get all 7 days from Sunday to Saturday
+    //   for (let i = 0; i < 7; i++) {
+    //     const date = new Date(sunday);
+    //     date.setDate(sunday.getDate() + i);
+    //     days.push(date);
+    //   }
+    //   return days;
+    // };
 
     useEffect(() => {
         const currentDate = new Date();
@@ -101,56 +134,107 @@ export default function MoodScreen() {
 
           const moodDatas = response.data;
 
-          const sortedMoodData = [...moodDatas].sort((a: any, b: any) => {
-            return new Date(b.emotion_dated).getTime() - new Date(a.emotion_dated).getTime();
-          });
+          // Get last 7 days for mood history (including today)
+          const last7Days = getLast7Days();
 
-          const latest7 = sortedMoodData.slice(0, 7).reverse();
+          // Map mood data to last 7 days
+          const moodMap = last7Days.map((date) => {
+            const moodForDay = moodDatas.find((item: any) => {
+              const moodDate = new Date(item.emotion_dated);
+              moodDate.setHours(0, 0, 0, 0);
+              return moodDate.getTime() === date.getTime();
+            });
 
-          const Today = new Date();
-          const startOfWeek = new Date(Today);
-          startOfWeek.setDate(Today.getDate() - Today.getDay());
-          startOfWeek.setHours(0, 0, 0, 0);
+            if (moodForDay) {
+              return {
+                emoji: getEmoji(moodForDay.emotion),
+                label: moodForDay.emotion,
+                dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                dateStr: `${date.getMonth() + 1}/${date.getDate()}`,
+              };
+            }
 
-          // Updated moodMap to always show day name and date
-          const moodMap = latest7.map((item: any) => {
-            const date = new Date(item.emotion_dated);
-
+            // Return empty data if no mood for that day
             return {
-              emoji: getEmoji(item.emotion),
-              label: item.emotion,
-              dayName: date.toLocaleDateString('en-US', { weekday: 'short' }), // Always show day name
-              dateStr: `${date.getMonth() + 1}/${date.getDate()}`, // Always show date
+              emoji: '',
+              label: '',
+              dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+              dateStr: `${date.getMonth() + 1}/${date.getDate()}`,
             };
           });
 
-          const transformedData: MoodDataItem[] = response.data.map((item: any) => {
-            const moodIndex = moods.findIndex(m => m.label === item.emotion);
-            const dateObj = new Date(item.emotion_dated);
-            let dayName: string;
-            if (dateObj >= startOfWeek && dateObj <= Today) {
-              dayName = dateObj.toLocaleDateString('en-US', { weekday: 'short' }); // e.g., "Tue"
-            } else {
-              dayName = dateObj.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit' }); // e.g., "05/14"
+          // Get current week (Mon-Sun) for graph
+          const currentDay = new Date();
+          currentDay.setHours(0, 0, 0, 0);
+
+          // Get Monday of current week
+          const monday = new Date(currentDay);
+          const dayOfWeek = currentDay.getDay();
+          const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // If Sunday, go back 6 days
+          monday.setDate(currentDay.getDate() - daysFromMonday);
+          monday.setHours(0, 0, 0, 0);
+
+          // Create array of 7 days starting from Monday
+          const currentWeek = [];
+          for (let i = 0; i < 7; i++) {
+            const date = new Date(monday);
+            date.setDate(monday.getDate() + i);
+            currentWeek.push(date);
+          }
+
+          // Map mood data for graph - only show up to today
+          const transformedData: MoodDataItem[] = currentWeek.map((date) => {
+            const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+
+            // If date is in the future, return empty data
+            if (date > currentDay) {
+              return {
+                date,
+                dayName,
+                mood: null,
+                moodIndex: null,
+                barHeight: 0,
+                animatedHeight: new Animated.Value(0),
+              };
             }
 
-          const barHeight = calculateBarHeight(moodIndex);
+            // Find mood for this date
+            const moodForDay = moodDatas.find((item: any) => {
+              const moodDate = new Date(item.emotion_dated);
+              moodDate.setHours(0, 0, 0, 0);
+              return moodDate.getTime() === date.getTime();
+            });
 
-          // Initialize with 0 height for animation
-          const animatedHeight = new Animated.Value(0);
+            if (moodForDay) {
+              const moodIndex = moods.findIndex(m => m.label === moodForDay.emotion);
+              const barHeight = calculateBarHeight(moodIndex);
+              const animatedHeight = new Animated.Value(0);
+
+              return {
+                date,
+                dayName,
+                mood: moodForDay.emotion,
+                moodIndex,
+                barHeight,
+                animatedHeight,
+              };
+            }
+
+            // Return empty data for past days with no mood
             return {
-              date: dateObj,
+              date,
               dayName,
-              mood: item.emotion,
-              moodIndex,
-              barHeight,
-              animatedHeight,
+              mood: null,
+              moodIndex: null,
+              barHeight: 0,
+              animatedHeight: new Animated.Value(0),
             };
           });
 
           setMoodHistory(moodMap);
           setMoodData(transformedData);
-          // Start animations after a short delay to ensure components are mounted
+
+          // Start animations after a short delay
           setTimeout(() => {
             startBarAnimations(transformedData);
           }, 300);
@@ -162,16 +246,16 @@ export default function MoodScreen() {
       fetchMood();
     }, [getEmoji, moods, studentID, reloadKey]);
 
-    // Function to start bar animations
     const startBarAnimations = (data: MoodDataItem[]) => {
-      // Create animation sequence with staggered starts
       data.forEach((item, index) => {
-        Animated.timing(item.animatedHeight, {
-          toValue: item.barHeight,
-          duration: 3000, // 5 seconds animation
-          delay: index * 100, // Stagger start for visual appeal
-          useNativeDriver: false, // height animations cannot use native driver
-        }).start();
+        if (item.barHeight > 0) {
+          Animated.timing(item.animatedHeight, {
+            toValue: item.barHeight,
+            duration: 3000,
+            delay: index * 100,
+            useNativeDriver: false,
+          }).start();
+        }
       });
     };
 
@@ -188,13 +272,8 @@ export default function MoodScreen() {
     }, [moodData, currentMonth, currentYear, moods, reloadKey]);
 
     const calculateBarHeight = (moodIndex : number) => {
-      // In our example, the moods are in reverse order (Happy at top, Angry at bottom)
-      // So we need to calculate the height accordingly
       if (moodIndex === null) {return 0;}
-
-      // Calculate the height based on which mood row the bar belongs to
-      // Each mood row is 40px height
-      return verticalScale(39.5 * (6 - moodIndex) + 10 + (1.5 * moodIndex)); // 6 is the max index (7 moods - 1)
+      return verticalScale(39.5 * (6 - moodIndex) + 10 + (1.5 * moodIndex));
     };
 
     const generateCalendarDays = () => {
@@ -214,7 +293,6 @@ export default function MoodScreen() {
 
       const calendarDays = [];
 
-      // Previous month's days
       for (let i = daysInPrevMonth - daysFromPrevMonth + 1; i <= daysInPrevMonth; i++) {
         calendarDays.push({
           day: i,
@@ -224,7 +302,6 @@ export default function MoodScreen() {
         });
       }
 
-      // Current month's days
       for (let i = 1; i <= daysInMonth; i++) {
         calendarDays.push({
           day: i,
@@ -234,7 +311,6 @@ export default function MoodScreen() {
         });
       }
 
-      // Next month's days
       for (let i = 1; i <= daysFromNextMonth; i++) {
         calendarDays.push({
           day: i,
@@ -288,7 +364,6 @@ export default function MoodScreen() {
         });
 
         try {
-          // Log student activity for the Wellness module
           await axios.post(`${API}/student-activities/${studentID}/insert`, { module: 'Mood' });
         } catch (err) {
           console.error('Error logging student activity:', err);
@@ -297,7 +372,6 @@ export default function MoodScreen() {
         console.log('Success:', response.data.message);
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
-          // error is an AxiosError, safe to access response and message
           console.warn('Failed:', error.response?.data?.message ?? error.message);
         } else if (error instanceof Error) {
           console.error('Error sending mood:', error.message);
@@ -349,28 +423,27 @@ export default function MoodScreen() {
                         <Text style={styles.MoodHistoryDate}>{today}</Text>
                     </View>
                     <View style={styles.Moods}>
-                      {[
-                        ...Array(7 - moodHistory.slice(-7).length).fill(null),  // fillers first
-                        ...moodHistory.slice(-7),                               // moods last
-                      ].map((item, index) => (
+                      {moodHistory.map((item, index) => (
                         <View key={index} style={styles.Mood}>
                           {item?.emoji ? (
                             <Text style={styles.MoodText}>{item.emoji}</Text>
                           ) : (
                             <View style={styles.MoodEmpty} />
                           )}
-                          <Text style={styles.moodDays}>{item?.dayName || 'none'}</Text>
-                          <Text style={styles.moodDates}>{item?.dateStr || 'none'}</Text>
-                          <Text style={styles.MoodLabel}>{item?.label || 'none'}</Text>
+                          <Text style={styles.moodDays}>{item?.dayName || ''}</Text>
+                          <Text style={styles.MoodLabel}>{item?.label || ''}</Text>
                         </View>
                       ))}
                     </View>
                     <TouchableOpacity onPress={() => setModalVisible(true)} style={styles.buttonContainer}><Text style={styles.todayButton}>Enter your mood for today</Text></TouchableOpacity>
                 </View>
                 <View style={styles.MoodContainers}>
-                    <Text style={styles.GraphTitle}>Weekly Mood Graph</Text>
+                    <View style={styles.MoodHistoryTitleContainer}>
+                      <Text style={styles.GraphTitle}>Weekly Mood Graph</Text>
+                      <View style={styles.MoodHistoryTitleVerticalLine}><></></View>
+                      <Text style={styles.MoodHistoryDate}>{today}</Text>
+                    </View>
                     <View style={styles.graphContainer}>
-                      {/* Mood emojis on the left side */}
                       <View style={styles.moodLabels}>
                         {moods.map((mood, index) => (
                           <View key={index} style={styles.moodRow}>
@@ -378,21 +451,17 @@ export default function MoodScreen() {
                           </View>
                         ))}
                       </View>
-                      {/* Horizontal grid lines */}
                       <View style={styles.gridContainer}>
                         {moods.map((_, index) => (
                           <View key={index} style={styles.gridLine} />
                         ))}
 
-                        {/* Vertical and horizontal axes */}
                         <View style={styles.horizontalAxis} />
                         <View style={styles.verticalAxis} />
 
-                        {/* Days and mood bars */}
                         <View style={styles.daysAndBars}>
-                          {moodData.slice(-7).map((day, index) => (
+                          {moodData.map((day, index) => (
                             <View key={index} style={styles.dayColumn}>
-                              {/* Bar for the mood if exists */}
                               {day.mood && (
                                 <Animated.View
                                   key={((day.moodIndex || 0 ) + reloadKey)}
@@ -401,12 +470,11 @@ export default function MoodScreen() {
                                     // eslint-disable-next-line react-native/no-inline-styles
                                     {
                                       backgroundColor: day.moodIndex !== null ? moods[day.moodIndex].color : '#fff',
-                                      height: day.animatedHeight, // Use animated value instead
+                                      height: day.animatedHeight,
                                     },
                                   ]}
                                 />
                               )}
-                              {/* Day label */}
                               <Text style={styles.dayLabel}>{day.dayName}</Text>
                             </View>
                           ))}
@@ -439,7 +507,6 @@ export default function MoodScreen() {
                           {weeks.map((week, index) => (
                             <View key={index} style={styles.week}>
                               {week.map((day, i) => {
-                                // Construct full date string for comparison
                                 const thisDate = new Date(day.year, day.month, day.day);
                                 const moodForDay = moodData.find(
                                   (m) =>
@@ -471,7 +538,6 @@ export default function MoodScreen() {
                                         {day.day}
                                       </Text>
 
-                                      {/* Show emoji if matched mood exists, else show empty */}
                                       {moodForDay ? (
                                         <Text style={styles.calendarEmoji}>
                                           {moodForDay.moodIndex !== null && moodForDay.moodIndex >= 0 && moodForDay.moodIndex < moods.length
@@ -603,7 +669,7 @@ const styles = StyleSheet.create({
     MoodHistoryTitleVerticalLine: { width: scale(1.5), backgroundColor: 'gray', height: verticalScale(25)},
     MoodHistoryDate: {
         fontFamily: 'Lora-Regular',
-        fontSize: moderateScale(12),
+        fontSize: moderateScale(11),
         color: 'black',
         marginLeft: scale(5),
         top: verticalScale(5),
@@ -630,15 +696,16 @@ const styles = StyleSheet.create({
         marginBottom: verticalScale(-3),
     },
     MoodEmpty: {
-        width: scale(35),
-        height: verticalScale(35),
+        width: scale(25),
+        height: verticalScale(25),
         borderRadius: moderateScale(22),
         backgroundColor: '#b7e3cc',
         marginBottom: verticalScale(4),
         borderWidth: moderateScale(2),
         borderColor: '#4b946a',
         borderStyle: 'dashed',
-        marginVertical: verticalScale(7),
+        marginVertical: verticalScale(10),
+        marginLeft: scale(7),
     },
     moodDays: {
         color: '#666',
@@ -700,32 +767,33 @@ const styles = StyleSheet.create({
       marginTop: verticalScale(20),
       height: verticalScale(1),
       backgroundColor: '#555',
-      width: '100%',
-      marginBottom: verticalScale(17), // 40px total height per row
+      width: '106%',
+      marginBottom: verticalScale(17),
+      left: scale(-10),
     },
     horizontalAxis: {
       height: verticalScale(2),
       backgroundColor: '#000',
-      width: '123%',
+      width: '125%',
       position: 'absolute',
-      bottom: verticalScale(30), // Space for day labels
-      left: -55,
+      bottom: verticalScale(30),
+      left: scale(-50),
     },
     verticalAxis: {
       width: scale(2),
       backgroundColor: '#000',
       height: '100%',
       position: 'absolute',
-      left: scale(0),
+      left: scale(-10),
     },
     daysAndBars: {
       flexDirection: 'row',
       position: 'absolute',
       bottom: verticalScale(2.5),
-      left: scale(0),
+      left: scale(-15),
       right: scale(0),
       height: '100%',
-      paddingLeft: scale(5), // Space from vertical axis
+      paddingLeft: scale(5),
     },
     dayColumn: {
       width: scale(32.5),
@@ -737,7 +805,7 @@ const styles = StyleSheet.create({
     moodBar: {
       width: scale(30),
       position: 'absolute',
-      bottom: verticalScale(30), // Above day labels
+      bottom: verticalScale(30),
       backgroundColor: '#fff9c4',
       borderWidth: moderateScale(0.5),
       borderColor: '#333',
@@ -901,10 +969,9 @@ const styles = StyleSheet.create({
     },
     modalContainer: {
       flex: 1,
-      backgroundColor: '#fff', // Change to rgba() for semi-transparency
+      backgroundColor: '#fff',
       justifyContent: 'center',
       alignItems: 'center',
     },
     modalBG: { position: 'absolute', top: verticalScale(0), width: width, height: height },
 });
-
