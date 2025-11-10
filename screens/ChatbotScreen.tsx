@@ -148,8 +148,8 @@ export default function ChatbotScreen() {
           if (response.data?.user) {
             setStudentID(response.data.user.id);
             const profilePic = response.data.user.profilePic;
-            if (!profilePic) {
-              setPicturePath(`${RootAPI}/${profilePic}`);
+            if (profilePic) {
+              setPicturePath(`${RootAPI}${profilePic}`);
             } else {
               setPicturePath(null);
             }
