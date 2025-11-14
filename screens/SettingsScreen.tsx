@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Image, NativeSyntheticEvent, TextInputKeyPressEventData } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Image, NativeSyntheticEvent, TextInputKeyPressEventData, Dimensions } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -10,6 +10,10 @@ import apiClient from '../APIClient';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import DrawerComponent from '../Components/DrawerComponent';
 import axios from 'axios';
+
+const { width } = Dimensions.get('window');
+
+const imageSize = width * 0.5; // 25% of screen width (adjust this as needed)
 
 export default function SettingsScreen() {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
@@ -703,7 +707,7 @@ const styles = StyleSheet.create({
       fontFamily: 'Poppins-ExtraBold',
       color: 'black',
   },
-  Image: { width: '100%', height: '100%', borderRadius: moderateScale(9999), borderColor: '#b7e3cc', borderWidth: moderateScale(5) },
+  Image: { width: imageSize, height: imageSize, borderRadius: moderateScale(9999), borderColor: '#b7e3cc', borderWidth: moderateScale(5) },
   imageHolder: {width: '50%', height: '28.5%', borderRadius: moderateScale(9999), position: 'relative', marginBottom: verticalScale(25)},
   imageIcon: {backgroundColor: '#b7e3cc', color: 'white', width: moderateScale(45), height: verticalScale(40), padding: moderateScale(7.5), borderRadius: moderateScale(9999), position: 'absolute', bottom: verticalScale(-20), left: '40%'},
   name: {fontFamily: 'Poppins-ExtraBold', fontSize: moderateScale(25), textAlign: 'center', marginBottom: verticalScale(5), color: '#317873'},

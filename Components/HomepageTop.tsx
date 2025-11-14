@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Text, Image, Modal, TextInput, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Text, Image, Modal, TextInput, TouchableOpacity, Dimensions } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationProp } from '@react-navigation/native';
@@ -9,6 +9,10 @@ import apiClient from '../APIClient';
 import { io } from 'socket.io-client';
 import { jwtDecode } from 'jwt-decode';
 import Ionicons from 'react-native-vector-icons/Ionicons';
+
+const { width } = Dimensions.get('window');
+
+const imageSize = width * 0.315; // 25% of screen width (adjust this as needed)
 
 interface ChildComponentProps {
     navigation: NavigationProp<RootStackParamList>;
@@ -230,8 +234,8 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: moderateScale(100),
     },
     imageholder: {
-        height: '75%',
-        width: '90%',
+        height: imageSize,
+        width: imageSize,
         backgroundColor: 'black',
         borderRadius: moderateScale(200),
         position: 'absolute',

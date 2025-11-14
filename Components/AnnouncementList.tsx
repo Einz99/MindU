@@ -24,6 +24,8 @@ interface AnnouncementListProps {
   loading: boolean;
   getCategoryColor: (category: string) => string;
   formatDate: (dateString: string) => string;
+  onScrollStart: () => void;   // Start scrolling handler
+  onScrollEnd: () => void;     // End scrolling handler
 }
 
 const AnnouncementList: FC<AnnouncementListProps> = ({
@@ -31,6 +33,8 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
   loading,
   getCategoryColor,
   formatDate,
+  onScrollStart,
+  onScrollEnd,
 }) => {
   if (loading) {
     return (
@@ -88,9 +92,11 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
 
   return (
     <ScrollView
+      onTouchStart={onScrollStart}  // Disable parent ScrollView when starting to scroll
+      onTouchEnd={onScrollEnd}   // Reset scroll tracking after scrolling ends
       contentContainerStyle={[
         styles.listContent,
-        announcements.length <= 2 && styles.shortList, {/* ✅ Add conditional style */},
+        announcements.length <= 2 && styles.shortList,
       ]}
     >
       {announcements.map((item, index) => renderItem(item, index))}

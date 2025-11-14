@@ -258,6 +258,8 @@ export default function ArticleList() {
                           source={{ uri: `${RootAPI}${article.filepath}` }}
                           javaScriptEnabled
                           domStorageEnabled
+                          scrollEnabled={true} // Add this
+                          nestedScrollEnabled={true} // Add this for Android
                           injectedJavaScript={`
                             setTimeout(() => {
                               window.ReactNativeWebView.postMessage(
@@ -349,9 +351,10 @@ const styles = StyleSheet.create({
         alignSelf: 'center',
     },
     webView: {
-        height: verticalScale(300),
-        marginTop: verticalScale(10),
-        width: '100%',
+      flex: 1,
+      marginTop: verticalScale(10),
+      width: '100%',
+      marginBottom: verticalScale(60),
     },
     backButton: {position: 'absolute', zIndex: 10, top: verticalScale(20), right: scale(10)},
     lefted: {left: scale(10), right: scale(0)},

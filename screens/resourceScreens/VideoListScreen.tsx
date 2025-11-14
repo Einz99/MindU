@@ -231,7 +231,7 @@ export default function VideoList() {
               { transform: [{ translateX: slideAnim }] },
             ]}
           >
-            <ScrollView style={styles.scrollView}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
               {article ? (
                 <React.Fragment key={article.ID}>
                   <View style={styles.header}>
@@ -314,6 +314,9 @@ const styles = StyleSheet.create({
       scrollView: {
           flex: 1,
       },
+      scrollViewContent: {
+          paddingBottom: verticalScale(90),
+      },
       VideoView: {
           width: '100%',
           height: verticalScale(250),
@@ -328,7 +331,6 @@ const styles = StyleSheet.create({
       },
       VideoText: {
         width: '100%',
-        height: '100%',
         paddingHorizontal: scale(20),
       },
       articleTitle: {

@@ -211,7 +211,7 @@ export default function HomepageScreen() {
     <ScrollView
       ref={scrollViewRef}
       style={styles.container}
-      scrollEnabled={!isScrolling} // Disable scroll if touching the list
+      scrollEnabled={!isScrolling} // Disable scroll if interacting with AnnouncementList
       onTouchStart={handleScrollStart}
       onTouchEnd={handleScrollEnd}
     >
@@ -228,6 +228,8 @@ export default function HomepageScreen() {
           loading={loading}
           getCategoryColor={getCategoryColor}
           formatDate={formatDate}
+          onScrollStart={handleScrollStart} // Pass function to handle scrolling start
+          onScrollEnd={handleScrollEnd}     // Pass function to handle scrolling end
         />
       </View>
 
@@ -349,7 +351,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   announcementTitle: {
-    fontSize: moderateScale(33),
+    fontSize: moderateScale(30),
     fontFamily: 'Poppins-Bold',
     textDecorationLine: 'underline',
     textAlign: 'center',
