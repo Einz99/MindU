@@ -594,7 +594,11 @@ export default function MoodScreen() {
                 </View>
             </ScrollView>
 
-            <InfiniteSwipeModal visible={modalVisible} handlePressMoodToday={handlePressMoodToday}/>
+            <InfiniteSwipeModal
+              visible={modalVisible}
+              handlePressMoodToday={handlePressMoodToday}
+              onClose={() => setModalVisible(false)}
+            />
         </View>
     );
 }

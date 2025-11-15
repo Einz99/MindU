@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
 const dotAreaWidth = width - 160;
@@ -66,10 +67,11 @@ const loopedScreens = Array(100).fill(screens).flat();
 type InfiniteSwipeModalProps = {
   visible: boolean;
   handlePressMoodToday: (Mood : string) => void;
+  onClose: () => void;
 };
 
 
-export default function InfiniteSwipeModal({ visible, handlePressMoodToday }: InfiniteSwipeModalProps) {
+export default function InfiniteSwipeModal({ visible, handlePressMoodToday, onClose }: InfiniteSwipeModalProps) {
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -117,6 +119,11 @@ export default function InfiniteSwipeModal({ visible, handlePressMoodToday }: In
           })}
           renderItem={({ item }) => (
             <View style={[{ backgroundColor: screenList[item].lightColor }, { width, height }]}>
+                <View style={styles.backButton}>
+                  <TouchableOpacity onPress={onClose}>
+                    <Ionicons name="arrow-back" size={25} color="#000" />
+                  </TouchableOpacity>
+                </View>
                 <View style={styles.topPart}>
                     <Text style={[styles.fancy, {color: screenList[item].darkColor}]}>How are you</Text>
                     <Text style={[styles.fancy, {color: screenList[item].darkColor}]}>feeling</Text>
@@ -221,4 +228,5 @@ const styles = StyleSheet.create({
     left: width / 2,
     transform: [{ translateX: -((width * 0.75) / 2) }],
   },
+  backButton: {position: 'absolute', top: 20, left: 20, zIndex: 10},
 });
