@@ -440,8 +440,6 @@ export default function MoodScreen() {
                 <View style={styles.MoodContainers}>
                     <View style={styles.MoodHistoryTitleContainer}>
                       <Text style={styles.GraphTitle}>Weekly Mood Graph</Text>
-                      <View style={styles.MoodHistoryTitleVerticalLine}><></></View>
-                      <Text style={styles.MoodHistoryDate}>{today}</Text>
                     </View>
                     <View style={styles.graphContainer}>
                       <View style={styles.moodLabels}>
