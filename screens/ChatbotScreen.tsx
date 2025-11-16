@@ -1071,7 +1071,7 @@ export default function ChatbotScreen() {
 
         <View style={styles.container}>
           <View style={styles.titleBox}>
-            <Text style={styles.title}>Chatbot</Text>
+            <Text style={styles.title}>Calmi</Text>
           </View>
         </View>
 
@@ -1116,6 +1116,7 @@ export default function ChatbotScreen() {
                               : require('../assets/images/default_profile.png')
                         }
                         style={styles.image}
+                        resizeMode="cover"
                       />
                     )}
 
@@ -1285,7 +1286,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#d6c9f3',
   },
   optionText: { fontSize: moderateScale(12.5), color: '#333', fontFamily: 'Poppins-Regular' },
-  image: {width: moderateScale(30), height: verticalScale(30), borderRadius: moderateScale(9999), borderWidth: moderateScale(2), borderColor: '#b7e3cc'},
+  image: {width: moderateScale(30), height: moderateScale(30), borderRadius: moderateScale(9999), borderWidth: moderateScale(2), borderColor: '#b7e3cc'},
   overlay: {
     flex: 1,
     justifyContent: 'center',

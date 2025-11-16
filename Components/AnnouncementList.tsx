@@ -60,8 +60,8 @@ const AnnouncementList: FC<AnnouncementListProps> = ({
   }
 
   const truncateContent = (content: string) => {
-    if (content.length <= 60) {return content;}
-    return content.substring(0, 60) + '... ';
+    if (content.length <= 40) {return content;}
+    return content.substring(0, 40) + '... ';
   };
 
   const handleAnnouncementPress = (item: Announcement) => {
@@ -223,7 +223,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   announcementTitleText: {
-    fontSize: moderateScale(22),
+    fontSize: moderateScale(20),
     fontFamily: 'Poppins-Bold',
     marginBottom: verticalScale(0),
     color: '#333',

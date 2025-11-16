@@ -178,10 +178,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#b7e3cc',
     letterSpacing: moderateScale(3),
-    marginBottom: verticalScale(15),
+    marginBottom: verticalScale(10),
   },
   input: {
-    height: verticalScale(50),
+    height: verticalScale(35),
     borderColor: '#888',
     borderWidth: moderateScale(1),
     paddingHorizontal: scale(15),
@@ -216,7 +216,7 @@ const styles = StyleSheet.create({
     padding: moderateScale(75),
     justifyContent: 'center',
     position: 'absolute',
-    top: verticalScale(30),
+    top: verticalScale(20),
   },
   disabledInput: {
     backgroundColor: '#f0f0f0',
@@ -227,9 +227,10 @@ const styles = StyleSheet.create({
   },
   errorpasswordhint: {
     color: '#ed5450',
-    textAlign: 'left',
+    textAlign: 'center',
     fontSize: moderateScale(10),
     fontFamily: 'Lora-Regular',
+    marginTop: verticalScale(5),
   },
   visibilityIcon: {
     position: 'absolute',

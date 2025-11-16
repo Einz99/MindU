@@ -119,8 +119,8 @@ export default function HomepageTop( { navigation }: ChildComponentProps ) {
       };
 
       const getNameFontSize = (nameLength: number) => {
-        const baseFontSize = 22;
-        const minFontSize = 12;
+        const baseFontSize = 19;
+        const minFontSize = 10;
         const scaleFactor = Math.max(minFontSize, baseFontSize - (nameLength - 10) * 0.8);
         return moderateScale(scaleFactor);
       };
@@ -272,7 +272,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
     },
     name: {
-        fontSize: moderateScale(25),
         color: '#317873',
         textAlign: 'center',
         fontFamily: 'Poppins-ExtraBold',
