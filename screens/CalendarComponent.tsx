@@ -220,9 +220,26 @@ export default function CalendarComponent() {
     weeks.push(calendarDays.slice(i, i + 7));
   }
 
-  const hasScheduledBacklog = (day: number, month: number, year: number) => {
+  const hasEvent = (day: number, month: number, year: number) => {
     return backlogs.some((backlog) => {
-      if (!backlog.sched_date || backlog.status !== 'Scheduled') {return false;}
+      if (!backlog.sched_date || backlog.status !== 'Scheduled' || backlog.title !== 'Guidance Related Events') {
+        return false;
+      }
+      const sched = new Date(backlog.sched_date);
+      return (
+        sched.getDate() === day &&
+        sched.getMonth() === month &&
+        sched.getFullYear() === year &&
+        (!backlog.student_id || backlog.student_id === userId)
+      );
+    });
+  };
+
+  const hasAppointment = (day: number, month: number, year: number) => {
+    return backlogs.some((backlog) => {
+      if (!backlog.sched_date || backlog.status !== 'Scheduled' || backlog.title === 'Guidance Related Events') {
+        return false;
+      }
       const sched = new Date(backlog.sched_date);
       return (
         sched.getDate() === day &&
@@ -274,8 +291,13 @@ export default function CalendarComponent() {
                         <View style={styles.daysGrid}>
                             {weeks.map((week, weekIndex) => (
                                 <View key={weekIndex} style={styles.week}>
-                                    {week.map((day, dayIndex) => (
-                                        <TouchableOpacity
+                                  {week.map((day, dayIndex) => {
+                                    const hasEventDot = hasEvent(day.day, day.month, day.year);
+                                    const hasAppointmentDot = hasAppointment(day.day, day.month, day.year);
+                                    const hasBothDots = hasEventDot && hasAppointmentDot;
+
+                                    return (
+                                      <TouchableOpacity
                                         key={dayIndex}
                                         style={[
                                           styles.day,
@@ -286,9 +308,18 @@ export default function CalendarComponent() {
                                         disabled={dayIndex === 0 || dayIndex === 6}
                                         onPress={() => handleDayPress(day)}
                                       >
-                                        {hasScheduledBacklog(day.day, day.month, day.year) && (
-                                          <View style={styles.dotIndicator} />
+                                        {/* Two dots container */}
+                                        {(hasEventDot || hasAppointmentDot) && (
+                                          <View style={[styles.dotContainer, !hasBothDots && styles.dotContainerCenter]}>
+                                            {hasEventDot && (
+                                              <View style={[styles.dotIndicator, styles.blueDot]} />
+                                            )}
+                                            {hasAppointmentDot && (
+                                              <View style={[styles.dotIndicator, styles.orangeDot]} />
+                                            )}
+                                          </View>
                                         )}
+
                                         <Text
                                           style={[
                                             styles.dayText,
@@ -299,7 +330,8 @@ export default function CalendarComponent() {
                                           {day.day}
                                         </Text>
                                       </TouchableOpacity>
-                                    ))}
+                                    );
+                                  })}
                                 </View>
                             ))}
                         </View>
@@ -484,7 +516,7 @@ const styles = StyleSheet.create({
       textAlign: 'center',
       fontFamily: 'Poppins-Bold',
       color: '#333',
-      fontSize: moderateScale(12),
+      fontSize: moderateScale(11.5),
     },
     daysGrid: {},
     week: {
@@ -524,6 +556,7 @@ const styles = StyleSheet.create({
       marginTop: verticalScale(10),
       width: '100%',
       alignItems: 'center',
+      overflow: 'scroll',
     },
     ScheduleList: {
         width: '90%',
@@ -553,6 +586,7 @@ const styles = StyleSheet.create({
       },
       backlogWrapper: {
         alignItems: 'center',
+        paddingBottom: verticalScale(40),
       },
       backlogItem: {
         backgroundColor: 'white',
@@ -560,7 +594,7 @@ const styles = StyleSheet.create({
         borderRadius: moderateScale(10),
         padding: moderateScale(10),
         flexDirection: 'row',
-        marginBottom: verticalScale(25),
+        marginBottom: verticalScale(5),
       },
       backlogTime: {
         width: '20%',
@@ -656,5 +690,22 @@ const styles = StyleSheet.create({
     shadowOffset: {width: scale(1), height: verticalScale(1)},
     shadowColor: 'gray',
     fontSize: moderateScale(15),
+  },
+  dotContainer: {
+    position: 'absolute',
+    top: verticalScale(-2),
+    flexDirection: 'row',
+    gap: moderateScale(2),
+  },
+  dotContainerCenter: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  blueDot: {
+    backgroundColor: '#60a5fa', // Blue for events
+  },
+  orangeDot: {
+    backgroundColor: '#ffb028', // Orange for appointments
   },
 });

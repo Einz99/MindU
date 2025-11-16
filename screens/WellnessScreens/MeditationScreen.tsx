@@ -299,20 +299,20 @@ export default function MeditationScreen() {
                   <Ionicons name="arrow-back" size={25} color="#000" />
                 </TouchableOpacity>
                 <View style={styles.VideoView}>
-                    <Video
-                        source={{ uri: `${RootAPI}${wellness.filepath}` }}
-                        controls
-                        resizeMode="cover"
-                        paused={false}
-                        style={fullScreen ?
-                            [styles.fullscreenVideo,{
-                                width: height,
-                                height: width,
-                            }] : styles.Video}
-                        onFullscreenPlayerWillPresent={() => handleFullScreen(true)}
-                        onFullscreenPlayerWillDismiss={() => handleFullScreen(false)}
-                        onEnd={() => onVideoFinish(videoIndex)}
-                    />
+                  <Video
+                    source={{ uri: `${RootAPI}${wellness.filepath}` }}
+                    controls
+                    resizeMode="contain"  // Changed from "cover" to "contain"
+                    paused={false}
+                    style={fullScreen ?
+                      [styles.fullscreenVideo, {
+                        width: height,
+                        height: width,
+                      }] : styles.Video}
+                    onFullscreenPlayerWillPresent={() => handleFullScreen(true)}
+                    onFullscreenPlayerWillDismiss={() => handleFullScreen(false)}
+                    onEnd={() => onVideoFinish(videoIndex)}
+                  />
                 </View>
                 <View style={styles.VideoText}>
                     <Text style={styles.articleTitle}>{wellness.title}</Text>
@@ -418,12 +418,15 @@ const styles = StyleSheet.create({
       paddingBottom: verticalScale(90),
   },
   VideoView: {
-      width: '100%',
-      height: verticalScale(250),
+    width: '100%',
+    height: verticalScale(250),
+    backgroundColor: 'black', // Add black background for letterboxing
+    justifyContent: 'center', // Center the video vertically
+    alignItems: 'center', // Center the video horizontally
   },
   Video: {
-      width: '100%',
-      height: '100%',
+    width: '100%',
+    height: '100%',
   },
   fullscreenVideo: {
     position: 'absolute',
@@ -432,10 +435,11 @@ const styles = StyleSheet.create({
   VideoText: {
     width: '100%',
     paddingHorizontal: scale(20),
+    marginTop: verticalScale(20),
   },
   articleTitle: {
-    fontSize: moderateScale(50),
-    fontFamily: 'Poppins-Regular',
+    fontSize: moderateScale(30),
+    fontFamily: 'Poppins-Bold',
     color: 'black',
   },
   articleDate: {
@@ -443,6 +447,7 @@ const styles = StyleSheet.create({
     color: 'grey',
     marginBottom: verticalScale(10),
     fontFamily: 'Lora-Regular',
+    marginTop: verticalScale(-10),
   },
   articleDesc: {
     fontSize: moderateScale(15),

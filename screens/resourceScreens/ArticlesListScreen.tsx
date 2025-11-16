@@ -325,12 +325,12 @@ const styles = StyleSheet.create({
     },
     article: {
         width: '100%',
-        padding: moderateScale(20),
+        padding: moderateScale(10),
     },
     articleTitle: {
-        fontSize: moderateScale(40),
+        fontSize: moderateScale(30),
         paddingLeft: scale(6),
-        fontFamily: 'Poppins-SemiBold',
+        fontFamily: 'Poppins-Bold',
         color: 'black',
     },
     articleTime: {
@@ -338,12 +338,14 @@ const styles = StyleSheet.create({
         fontSize: moderateScale(15),
         paddingLeft: scale(6),
         fontFamily: 'Lora-Regular',
+        marginTop: verticalScale(-30),
     },
     articleAuthor: {
         fontSize: moderateScale(15),
         paddingLeft: scale(6),
         fontFamily: 'Poppins-SemiBold',
         color: 'black',
+        marginTop: verticalScale(-10),
     },
     articleImage: {
         width: '95%',

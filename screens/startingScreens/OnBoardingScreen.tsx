@@ -26,7 +26,7 @@ export default function OnboardingScreen() {
         <View style={styles.container}>
             <Image source={require('../../assets/images/Onboarding.png')} style={styles.image} />
             <Text style={styles.quote}>
-                'Neque porro quisquam est qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit...'
+                "Caring for someone’s well-being isn’t just about being there when they fall—it’s about helping them feel safe enough to rise."
             </Text>
             <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
                 <Text style={styles.buttonText}>GET STARTED</Text>

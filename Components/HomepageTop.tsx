@@ -118,11 +118,18 @@ export default function HomepageTop( { navigation }: ChildComponentProps ) {
         setModalVisible(false);
       };
 
+      const getNameFontSize = (nameLength: number) => {
+        const baseFontSize = 22;
+        const minFontSize = 12;
+        const scaleFactor = Math.max(minFontSize, baseFontSize - (nameLength - 10) * 0.8);
+        return moderateScale(scaleFactor);
+      };
+
     return (
         <View>
             <View style={styles.topContainer}>
                 <View style={styles.infoContainer}>
-                    <Text style={styles.name}>
+                    <Text style={[styles.name, { fontSize: getNameFontSize(name.length)}]}>
                       {/* eslint-disable-next-line react-native/no-inline-styles */}
                       Hi, <Text style={[styles.name, { color: 'white', textShadowColor: '#317873', textShadowOffset: { width: scale(1), height: verticalScale(1) }, textShadowRadius: moderateScale(2) }]}>{name}</Text>
                     </Text>
