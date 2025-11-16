@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Image, NativeSyntheticEvent, TextInputKeyPressEventData, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Image, NativeSyntheticEvent, TextInputKeyPressEventData, Dimensions, ActivityIndicator } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
@@ -42,7 +42,6 @@ export default function SettingsScreen() {
   const [code, setCode] = useState(['', '', '', '']);
   const inputRefs = useRef<Array<TextInput | null>>([]);
   const [passwordChange, setPasswordChange] = useState(false);
-  const [truePassword, setTruePassword] = useState('');
   const [oldPass, setOldPass] = useState('');
   const [tempPassword, setTempPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,13 +50,15 @@ export default function SettingsScreen() {
   const [newPassVisibility, setNewPassVisibility] = useState(false);
   const [confPassVisibility, setConfPassVisibility] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
-  const [message, setMessage] = useState('');
   const [, setNothing] = useState(false);
   const [codeModal, setCodeModal] = useState(false);
 
   const [messageError, setMessageError] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [alertModal, setAlertModal] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false); // Loading state for sending code
+  const [verifyingCode, setVerifyingCode] = useState(false); // Loading state for verifying code
+  const [changingPassword, setChangingPassword] = useState(false); // Loading state for changing password
 
   const refreshUserData = async () => {
     try {
@@ -75,7 +76,6 @@ export default function SettingsScreen() {
         setNotConfirmPic(response.data.user.profilePic);
         setEmail(response.data.user.email);
         setEmailTemp(response.data.user.email);
-        setTruePassword(response.data.user.password);
       }
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -107,7 +107,6 @@ export default function SettingsScreen() {
           setNotConfirmPic(response.data.user.profilePic);
           setEmail(response.data.user.email);
           setEmailTemp(response.data.user.email);
-          setTruePassword(response.data.user.password);
           // Password is not typically fetched from the server
           setPassword('*****************');
         } else {
@@ -200,41 +199,75 @@ export default function SettingsScreen() {
   };
 
   const handlePasswordConfirm = async () => {
-    if (truePassword !== oldPass) {
-      setMessage('Incorrect Old Password. Please try again.');
-      setTruePassword('');
-      setTempPassword('');
-      setConfirmPassword('');
+    // Validate inputs
+    if (!oldPass.trim() || !tempPassword.trim() || !confirmPassword.trim()) {
+      setIsSuccessful(false);
+      setMessageError('All password fields are required.');
+      setAlertModal(true);
       return;
-    } else if (tempPassword !== confirmPassword) {
-      setMessage('New Password and Confirm Password do not match.');
-      setTempPassword('');
-      setConfirmPassword('');
-      return;
-    } else {
-      try {
-        const token = await AsyncStorage.getItem('userToken');
-        const response = await apiClient.put(`${API}/update-password`,
-          { password: tempPassword, firstLogin: false },
-          { headers: { Authorization: `Bearer ${token}` }}
-        );
+    }
 
-        if (response.data.success) {
-          setPasswordChange(false);
-          setTempPassword('');
-          setConfirmPassword('');
-          setOldPass('');
-          setPassword('*****************');
-          refreshUserData();
-          setIsSuccessful(true);
-          setMessageError('Password updated successfully.');
-          setAlertModal(true);
-        }
-      } catch (error: any) {
-        setIsSuccessful(false);
-        setMessageError('Failed to update password. Please your check connection before trying again');
+    if (tempPassword !== confirmPassword) {
+      setIsSuccessful(false);
+      setMessageError('New Password and Confirm Password do not match.');
+      setAlertModal(true);
+      setTempPassword('');
+      setConfirmPassword('');
+      return;
+    }
+
+    // Validate password strength
+    if (!isPasswordValid(tempPassword)) {
+      setIsSuccessful(false);
+      setMessageError('Password must be at least 10 characters, have uppercase, lowercase, number and special character.');
+      setAlertModal(true);
+      return;
+    }
+
+    setChangingPassword(true); // Start loading state
+    try {
+      const token = await AsyncStorage.getItem('userToken');
+
+      // Send both old and new passwords to backend for verification
+      const response = await apiClient.put(`${API}/update-password`,
+        {
+          oldPassword: oldPass,
+          password: tempPassword,
+          firstLogin: false,
+        },
+        { headers: { Authorization: `Bearer ${token}` }}
+      );
+
+      if (response.data.success) {
+        setPasswordChange(false);
+        setTempPassword('');
+        setConfirmPassword('');
+        setOldPass('');
+        setPassword('*****************');
+        refreshUserData();
+        setIsSuccessful(true);
+        setMessageError('Password updated successfully.');
         setAlertModal(true);
       }
+    } catch (error: any) {
+      setIsSuccessful(false);
+
+      // Handle different error responses
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          setMessageError('Incorrect old password. Please try again.');
+        } else if (error.response?.data?.message) {
+          setMessageError(error.response.data.message);
+        } else {
+          setMessageError('Failed to update password. Please check your connection before trying again.');
+        }
+      } else {
+        setMessageError('Failed to update password. Please check your connection before trying again.');
+      }
+
+      setAlertModal(true);
+    } finally {
+      setChangingPassword(false); // End loading state
     }
   };
 
@@ -288,7 +321,6 @@ export default function SettingsScreen() {
   };
 
   const isPasswordValid = (passwordinput: string): boolean => {
-    setMessage('password must be atleast 10 characters, have uppercase, lowercase, number and special character');
     const minLength = /.{10,}/;
     const upper = /[A-Z]/;
     const lower = /[a-z]/;
@@ -305,6 +337,15 @@ export default function SettingsScreen() {
   };
 
   const handleSendCode = async () => {
+    // Validate email before sending
+    if (!email.trim() || !isEmailValid) {
+      setIsSuccessful(false);
+      setMessageError('Please enter a valid email address.');
+      setAlertModal(true);
+      return;
+    }
+
+    setSendingCode(true); // Start loading state
     try {
       const respond = await axios.post(`${API}/send-code`, {
         email: email,
@@ -317,6 +358,26 @@ export default function SettingsScreen() {
         setCodeModal(true);
       }
     } catch (err) {
+      setIsSuccessful(false);
+
+      // Handle different error scenarios
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 404) {
+          setMessageError('Email does not exist. Please check and try again.');
+        } else if (err.response?.status === 400) {
+          setMessageError('Email already in use by another account.');
+        } else if (err.response?.data?.message) {
+          setMessageError(err.response.data.message);
+        } else {
+          setMessageError('Failed to send verification code. Please try again.');
+        }
+      } else {
+        setMessageError('Network error. Please check your connection.');
+      }
+
+      setAlertModal(true);
+    } finally {
+      setSendingCode(false); // End loading state
     }
   };
 
@@ -342,15 +403,16 @@ export default function SettingsScreen() {
   const handleSubmit = async () => {
     const joinedCode = code.join('');
     if (joinedCode.length === 4) {
+      setVerifyingCode(true); // Start loading state
       try {
         const response = await axios.post(`${API}/verify-code`, {
           email: email,
           code: joinedCode,
-          }, {
+        }, {
           headers: { 'Content-Type': 'application/json' },
-          });
+        });
 
-        if(response.status === 200) {
+        if (response.status === 200) {
           try {
             const token = await AsyncStorage.getItem('userToken');
             const responded = await apiClient.put(`${API}/update-email`,
@@ -359,21 +421,55 @@ export default function SettingsScreen() {
             );
 
             if (responded.data.success) {
+              setCodeModal(false);
               setEmailChange(false);
               setEmailTemp(email);
+              setCode(['', '', '', '']); // Reset code inputs
               setIsSuccessful(true);
               setMessageError('Email updated successfully.');
               setAlertModal(true);
               refreshUserData();
             }
-          } catch (error : any) {
+          } catch (error: any) {
             setIsSuccessful(false);
-            setMessageError('Failed to update email. Please check your internet before trying again.');
+
+            // Handle update email errors
+            if (axios.isAxiosError(error)) {
+              if (error.response?.status === 400) {
+                setMessageError('Email already in use by another account.');
+              } else if (error.response?.data?.message) {
+                setMessageError(error.response.data.message);
+              } else {
+                setMessageError('Failed to update email. Please check your internet before trying again.');
+              }
+            } else {
+              setMessageError('Failed to update email. Please check your internet before trying again.');
+            }
+
             setAlertModal(true);
             setEmail(emailTemp);
           }
         }
       } catch (error) {
+        setIsSuccessful(false);
+
+        // Handle verification errors
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 400) {
+            setMessageError('Invalid or expired code. Please try again.');
+          } else if (error.response?.data?.message) {
+            setMessageError(error.response.data.message);
+          } else {
+            setMessageError('Failed to verify code. Please try again.');
+          }
+        } else {
+          setMessageError('Network error. Please check your connection.');
+        }
+
+        setAlertModal(true);
+        setCode(['', '', '', '']); // Reset code inputs on error
+      } finally {
+        setVerifyingCode(false); // End loading state
       }
     }
   };
@@ -502,17 +598,27 @@ export default function SettingsScreen() {
                 />
               </View>
             </View>
+            {/* Show validation error if email is invalid */}
+            {!isEmailValid && email.length > 0 && (
+              <Text style={styles.hint}>Invalid email format</Text>
+            )}
             </View>
             <View style={styles.LogoutActions}>
-              <TouchableOpacity onPress={() => {setEmailChange(false);}}>
+              <TouchableOpacity onPress={() => {setEmailChange(false); setEmail(emailTemp);}}>
                 <Text style={styles.backText}>BACK</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.sendBtn, styles.BGGreen]}
-                disabled={!email || !isEmailValid}
+                // eslint-disable-next-line react-native/no-inline-styles
+                style={[styles.sendBtn, styles.BGGreen, { opacity: (email && isEmailValid && !sendingCode) ? 1 : 0.5 }]}
+                disabled={!email || !isEmailValid || sendingCode}
                 onPress={handleSendCode}
               >
-                <Text style={styles.LogoutButtonText}>Send Code</Text>
+                {/* Show loading spinner while sending code */}
+                {sendingCode ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.LogoutButtonText}>Send Code</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -524,18 +630,18 @@ export default function SettingsScreen() {
           visible={codeModal}
           animationType="fade"
           transparent
-          onRequestClose={() => {setCodeModal(false); setEmail(emailTemp);}}
+          onRequestClose={() => {setCodeModal(false); setEmail(emailTemp); setCode(['', '', '', '']);}}
           >
           <View style={styles.overlay}>
             <View style={styles.LogoutModal}>
               <View style={[styles.LogoutHeader, styles.BGGreen]}>
                 <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Enter Verification Code</Text>
-                <TouchableOpacity onPress={() => {setCodeModal(false); setEmail(emailTemp);}}>
+                <TouchableOpacity onPress={() => {setCodeModal(false); setEmail(emailTemp); setCode(['', '', '', '']);}}>
                   <Ionicons name="close" size={22} color="#333" />
                 </TouchableOpacity>
               </View>
               <View style={styles.padding}>
-                <Text style={styles.LogoutConfirmation}>We’ve sent a code on your new email account enter code to proceed</Text>
+                <Text style={styles.LogoutConfirmation}>We've sent a code on your new email account enter code to proceed</Text>
               </View>
               <View style={styles.codeInputContainer}>
                 {code.map((digit, index) => (
@@ -553,16 +659,21 @@ export default function SettingsScreen() {
               </View>
 
               <View style={styles.LogoutActions}>
-                <TouchableOpacity onPress={() => setCodeModal(false)}>
+                <TouchableOpacity onPress={() => {setCodeModal(false); setEmail(emailTemp); setCode(['', '', '', '']);}}>
                   <Text style={styles.backText}>BACK</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   // eslint-disable-next-line react-native/no-inline-styles
-                  style={[styles.sendBtn, styles.BGGreen, { opacity: code.join('').length === 4 ? 1 : 0.5 }]}
-                  disabled={code.join('').length !== 4}
+                  style={[styles.sendBtn, styles.BGGreen, { opacity: (code.join('').length === 4 && !verifyingCode) ? 1 : 0.5 }]}
+                  disabled={code.join('').length !== 4 || verifyingCode}
                   onPress={handleSubmit}
                 >
-                  <Text style={styles.LogoutButtonText}>Submit Code</Text>
+                  {/* Show loading spinner while verifying code */}
+                  {verifyingCode ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={styles.LogoutButtonText}>Submit Code</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -579,7 +690,7 @@ export default function SettingsScreen() {
           <View style={styles.LogoutModal}>
             <View style={[styles.LogoutHeader, styles.BGGreen]}>
               <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Change Password</Text>
-              <TouchableOpacity onPress={() => {setPasswordChange(false); setTempPassword(''); setConfirmPassword(''); setOldPass('');}}>
+              <TouchableOpacity onPress={() => {setPasswordChange(false); setTempPassword(''); setConfirmPassword(''); setOldPass(''); setPasswordError(false);}}>
                 <Ionicons name="close" size={22} color="#333" />
               </TouchableOpacity>
             </View>
@@ -592,7 +703,8 @@ export default function SettingsScreen() {
                 <View style={styles.inputContainer}>
                   <TextInput
                     style={styles.input}
-                    onChangeText={(e) => {setOldPass(e); setPasswordError(!isPasswordValid(e));}}
+                    value={oldPass}
+                    onChangeText={(e) => setOldPass(e)}
                     secureTextEntry={!oldPassVisibility}
                   />
                   <TouchableOpacity
@@ -626,7 +738,7 @@ export default function SettingsScreen() {
                   <TextInput
                     style={[styles.input]}
                     value={confirmPassword}
-                    onChangeText={(e) => {setConfirmPassword(e); setPasswordError(!isPasswordValid(e));}}
+                    onChangeText={(e) => {setConfirmPassword(e);}}
                     secureTextEntry={!confPassVisibility}
                   />
                   <TouchableOpacity
@@ -637,19 +749,27 @@ export default function SettingsScreen() {
                   </TouchableOpacity>
                 </View>
               </View>
-              {passwordError && <Text style={styles.hint}>{message}</Text>}
+              {/* Show password requirements hint */}
+              {passwordError && tempPassword.length > 0 && (
+                <Text style={styles.hint}>Password must be at least 10 characters, have uppercase, lowercase, number and special character</Text>
+              )}
             </View>
             <View style={styles.LogoutActions}>
-              <TouchableOpacity onPress={() => {setPasswordChange(false); setTempPassword(''); setConfirmPassword(''); setOldPass('');}}>
+              <TouchableOpacity onPress={() => {setPasswordChange(false); setTempPassword(''); setConfirmPassword(''); setOldPass(''); setPasswordError(false);}}>
                 <Text style={styles.backText}>BACK</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.sendBtn, styles.BGGreen]}
-                onPress={() => {
-                    handlePasswordConfirm();
-                }}
+                // eslint-disable-next-line react-native/no-inline-styles
+                style={[styles.sendBtn, styles.BGGreen, { opacity: (oldPass && tempPassword && confirmPassword && !changingPassword) ? 1 : 0.5 }]}
+                disabled={!oldPass || !tempPassword || !confirmPassword || changingPassword}
+                onPress={handlePasswordConfirm}
               >
-                <Text style={styles.LogoutButtonText}>Change Password</Text>
+                {/* Show loading spinner while changing password */}
+                {changingPassword ? (
+                  <ActivityIndicator color="white" size="small" />
+                ) : (
+                  <Text style={styles.LogoutButtonText}>Change Password</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -786,6 +906,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#d9534f',
     paddingHorizontal: scale(20),
     borderRadius: moderateScale(30),
+    paddingVertical: verticalScale(5),
+    minWidth: scale(120),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   LogoutButtonText: {
     color: 'white',
@@ -804,7 +928,7 @@ const styles = StyleSheet.create({
     right: scale(10),
     top: '30%',
   },
-  hint: {color: '#ed5450', textAlign: 'left', paddingHorizontal: scale(20), fontFamily: 'Lora-Regular', marginBottom: verticalScale(10), marginTop: verticalScale(-10)},
+  hint: {color: '#ed5450', textAlign: 'left', paddingHorizontal: scale(20), fontFamily: 'Lora-Regular', marginBottom: verticalScale(10), marginTop: verticalScale(-10), fontSize: moderateScale(10)},
   wrongInput: {borderColor: 'red'},
   codeInputContainer: {
     flexDirection: 'row',
@@ -866,6 +990,7 @@ const styles = StyleSheet.create({
     color: '#4a4a4a',
     paddingHorizontal: scale(40),
     textAlign: 'center',
+    fontSize: moderateScale(12),
   },
   actions2: {
     flexDirection: 'row',

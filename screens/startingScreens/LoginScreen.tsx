@@ -52,6 +52,8 @@ export default function LoginScreen() {
   const [messageError, setMessageError] = useState('');
   const [isSuccessful, setIsSuccessful] = useState(false);
   const [alertModal, setAlertModal] = useState(false);
+  const [sendingCode, setSendingCode] = useState(false); // Loading state for sending verification code
+  const [verifyingCode, setVerifyingCode] = useState(false); // Loading state for verifying code
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim() || !isValid) {
@@ -157,24 +159,54 @@ export default function LoginScreen() {
   const handleSubmit = async () => {
     const joinedCode = code.join('');
     if (joinedCode.length === 4) {
+      setVerifyingCode(true); // Start loading state
       try {
         const response = await axios.post(`${API}/verify-code`, {
           email: forgotEmail,
           code: joinedCode,
-          }, {
+        }, {
           headers: { 'Content-Type': 'application/json' },
-          });
+        });
 
-        if(response.status === 200) {
+        if (response.status === 200) {
           setCodeModal(false);
+          setCode(['', '', '', '']); // Reset code inputs
           navigation.navigate('Forgot', { email: forgotEmail });
         }
       } catch (error) {
+        setIsSuccessful(false);
+
+        // Handle different error types
+        if (axios.isAxiosError(error)) {
+          if (error.response?.status === 400) {
+            setMessageError('Invalid or expired code. Please try again.');
+          } else if (error.response?.data?.message) {
+            setMessageError(error.response.data.message);
+          } else {
+            setMessageError('Failed to verify code. Please try again.');
+          }
+        } else {
+          setMessageError('Network error. Please check your connection.');
+        }
+
+        setAlertModal(true);
+        setCode(['', '', '', '']); // Reset code inputs on error
+      } finally {
+        setVerifyingCode(false); // End loading state
       }
     }
   };
 
   const handleSendCode = async () => {
+    // Validate email before sending
+    if (!forgotEmail.trim() || !isValidF) {
+      setIsSuccessful(false);
+      setMessageError('Please enter a valid email address.');
+      setAlertModal(true);
+      return;
+    }
+
+    setSendingCode(true); // Start loading state
     try {
       const respond = await axios.post(`${API}/send-code`, {
         email: forgotEmail,
@@ -187,64 +219,83 @@ export default function LoginScreen() {
         setCodeModal(true);
       }
     } catch (err) {
-    }
-  };
+      setIsSuccessful(false);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleGoogleLogin = async () => {
-    try {
-      setLoading(true);
-
-      await GoogleSignin.hasPlayServices();
-      const userInfo: any = await GoogleSignin.signIn();
-      const googleEmail = userInfo.user?.email ?? userInfo.email;
-
-      console.log('Google email:', googleEmail);
-
-      if (!googleEmail) {
-        throw new Error('Unable to retrieve email from Google Sign-In');
-      }
-
-      // Call backend
-      const res = await axios.post(`${API}/google-login`, { email: googleEmail });
-
-      const { accessToken, refreshToken, user } = res.data;
-
-      if (accessToken && refreshToken) {
-        await AsyncStorage.setItem('userToken', accessToken);
-        await AsyncStorage.setItem('refreshToken', refreshToken);
-
-        if (user.firstLogin) {
-          setIsSuccessful(true);
-          setMessageError('Login Successful. Please Update Your Password');
-          setAlertModal(true);
-          setTimeout(() => navigation.navigate('Updating'), 1000);
+      // Handle different error scenarios
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 404) {
+          setMessageError('Email does not exist. Please check and try again.');
+        } else if (err.response?.status === 400) {
+          setMessageError('Invalid email format.');
+        } else if (err.response?.data?.message) {
+          setMessageError(err.response.data.message);
         } else {
-          navigation.dispatch(
-            CommonActions.reset({
-              index: 0,
-              routes: [{ name: 'Homepage' }],
-            })
-          );
+          setMessageError('Failed to send verification code. Please try again.');
         }
       } else {
-        setIsSuccessful(false);
-        setMessageError('Login Failed. Invalid Credentials');
-        setAlertModal(true);
+        setMessageError('Network error. Please check your connection.');
       }
-    } catch (error) {
-      console.error('Google login error:', error);
-      setIsSuccessful(false);
-      setMessageError(
-        axios.isAxiosError(error)
-          ? 'Did not receive expected response from server. Please try again.'
-          : 'Google login failed. Please try again.'
-      );
+
       setAlertModal(true);
     } finally {
-      setLoading(false);
+      setSendingCode(false); // End loading state
     }
   };
+
+  // const handleGoogleLogin = async () => {
+  //   try {
+  //     setLoading(true);
+
+  //     await GoogleSignin.hasPlayServices();
+  //     const userInfo: any = await GoogleSignin.signIn();
+  //     const googleEmail = userInfo.user?.email ?? userInfo.email;
+
+  //     console.log('Google email:', googleEmail);
+
+  //     if (!googleEmail) {
+  //       throw new Error('Unable to retrieve email from Google Sign-In');
+  //     }
+
+  //     // Call backend
+  //     const res = await axios.post(`${API}/google-login`, { email: googleEmail });
+
+  //     const { accessToken, refreshToken, user } = res.data;
+
+  //     if (accessToken && refreshToken) {
+  //       await AsyncStorage.setItem('userToken', accessToken);
+  //       await AsyncStorage.setItem('refreshToken', refreshToken);
+
+  //       if (user.firstLogin) {
+  //         setIsSuccessful(true);
+  //         setMessageError('Login Successful. Please Update Your Password');
+  //         setAlertModal(true);
+  //         setTimeout(() => navigation.navigate('Updating'), 1000);
+  //       } else {
+  //         navigation.dispatch(
+  //           CommonActions.reset({
+  //             index: 0,
+  //             routes: [{ name: 'Homepage' }],
+  //           })
+  //         );
+  //       }
+  //     } else {
+  //       setIsSuccessful(false);
+  //       setMessageError('Login Failed. Invalid Credentials');
+  //       setAlertModal(true);
+  //     }
+  //   } catch (error) {
+  //     console.error('Google login error:', error);
+  //     setIsSuccessful(false);
+  //     setMessageError(
+  //       axios.isAxiosError(error)
+  //         ? 'Did not receive expected response from server. Please try again.'
+  //         : 'Google login failed. Please try again.'
+  //     );
+  //     setAlertModal(true);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
@@ -305,7 +356,7 @@ export default function LoginScreen() {
               </View>
               <View style={styles.padding}>
                 <TextInput
-                  style={styles.forgotInput}
+                  style={[styles.forgotInput, !isValidF && forgotEmail.length > 0 && styles.invalidInput]}
                   placeholder="Enter email"
                   placeholderTextColor="#888"
                   value={forgotEmail}
@@ -313,6 +364,10 @@ export default function LoginScreen() {
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
+                {/* Show validation error if email is invalid */}
+                {!isValidF && forgotEmail.length > 0 && (
+                  <Text style={styles.forgotErrorText}>Invalid Email!</Text>
+                )}
 
                 <View style={styles.forgotActions}>
                   <TouchableOpacity onPress={() => setShowModal(false)}>
@@ -320,13 +375,16 @@ export default function LoginScreen() {
                   </TouchableOpacity>
                   <TouchableOpacity
                     // eslint-disable-next-line react-native/no-inline-styles
-                    style={[styles.sendBtn, { opacity: (forgotEmail && isValidF) ? 1 : 0.5 }]}
-                    onPress={() => {
-                      handleSendCode();
-                    }}
-                    disabled={!isValidF || !forgotEmail}
+                    style={[styles.sendBtn, { opacity: (forgotEmail && isValidF && !sendingCode) ? 1 : 0.5 }]}
+                    onPress={handleSendCode}
+                    disabled={!isValidF || !forgotEmail || sendingCode}
                   >
-                    <Text style={styles.sendText}>Send code</Text>
+                    {/* Show loading spinner while sending code */}
+                    {sendingCode ? (
+                      <ActivityIndicator color="white" size="small" />
+                    ) : (
+                      <Text style={styles.sendText}>Send code</Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -340,12 +398,15 @@ export default function LoginScreen() {
             <View style={styles.forgotModal}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitleStyled}>Enter Verification Code</Text>
-                <TouchableOpacity onPress={() => setCodeModal(false)}>
+                <TouchableOpacity onPress={() => {
+                  setCodeModal(false);
+                  setCode(['', '', '', '']); // Reset code on close
+                }}>
                   <Ionicons name="close" size={22} color="#333" />
                 </TouchableOpacity>
               </View>
 
-              <Text style={styles.instructions}>We’ve sent a code on your email account enter to proceed</Text>
+              <Text style={styles.instructions}>We've sent a code on your email account enter to proceed</Text>
 
               <View style={styles.codeInputContainer}>
                 {code.map((digit, index) => (
@@ -363,16 +424,24 @@ export default function LoginScreen() {
               </View>
 
               <View style={styles.actions}>
-                <TouchableOpacity onPress={() => setCodeModal(false)}>
+                <TouchableOpacity onPress={() => {
+                  setCodeModal(false);
+                  setCode(['', '', '', '']); // Reset code on back
+                }}>
                   <Text style={styles.backText}>BACK</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   // eslint-disable-next-line react-native/no-inline-styles
-                  style={[styles.sendBtn, { opacity: code.join('').length === 4 ? 1 : 0.5 }]}
-                  disabled={code.join('').length !== 4}
+                  style={[styles.sendBtn, { opacity: (code.join('').length === 4 && !verifyingCode) ? 1 : 0.5 }]}
+                  disabled={code.join('').length !== 4 || verifyingCode}
                   onPress={handleSubmit}
                 >
-                  <Text style={styles.sendText}>Submit Code</Text>
+                  {/* Show loading spinner while verifying code */}
+                  {verifyingCode ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <Text style={styles.sendText}>Submit Code</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </View>
@@ -442,6 +511,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: moderateScale(10),
     top: verticalScale(25),
+  },
+  forgotErrorText: {
+    color: 'red',
+    fontSize: moderateScale(10),
+    marginTop: verticalScale(-15),
+    marginBottom: verticalScale(10),
+    fontFamily: 'Lora-Regular',
   },
   loginbtn: {
     paddingVertical: verticalScale(5),
@@ -522,6 +598,9 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(10),
     paddingHorizontal: scale(20),
     borderRadius: moderateScale(10),
+    minWidth: scale(100),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   sendText: {
     color: 'white',
@@ -575,4 +654,3 @@ const styles = StyleSheet.create({
   },
   google: { width: moderateScale(30), height: moderateScale(30), marginTop: verticalScale(15), borderRadius: moderateScale(99) },
 });
-
