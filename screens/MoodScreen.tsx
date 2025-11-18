@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Text, ScrollView, View, StyleSheet, TouchableOpacity, Dimensions, Animated } from 'react-native';
+import { Text, ScrollView, View, StyleSheet, TouchableOpacity, Dimensions, Animated, Modal } from 'react-native';
 import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import DrawerComponent from '../Components/DrawerComponent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,6 +20,7 @@ export default function MoodScreen() {
     const [name, setName] = useState('');
     const [today, setToday] = useState('');
     const [moodData, setMoodData] = useState<MoodDataItem[]>([]);
+    const [allMoodData, setAllMoodData] = useState<MoodDataItem[]>([]);
     const [studentID, setStudentID] = useState(0);
     const [moodHistory, setMoodHistory] = useState(
         Array(7).fill({ emoji: '', label: '', dayName: '', dateStr: '' })
@@ -31,6 +32,7 @@ export default function MoodScreen() {
     const [currentMonth, setCurrentMonth] = useState((todayCalendar.getMonth() - 1));
     const [currentYear, setCurrentYear] = useState(todayCalendar.getFullYear());
     const [reloadKey, setReloadKey] = useState(0);
+    const [successModal, setSuccessModal] = useState(false);
 
     const resetPage = () => {
       setReloadKey(prev => prev + 1);
@@ -182,7 +184,7 @@ export default function MoodScreen() {
             currentWeek.push(date);
           }
 
-          // Map mood data for graph - only show up to today
+          // Map mood data for graph - only show up to today (CURRENT WEEK ONLY)
           const transformedData: MoodDataItem[] = currentWeek.map((date) => {
             const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
 
@@ -231,8 +233,26 @@ export default function MoodScreen() {
             };
           });
 
+          // Transform ALL mood data for calendar (ALL DATES)
+          const allMoods: MoodDataItem[] = moodDatas.map((item: any) => {
+            const moodDate = new Date(item.emotion_dated);
+            moodDate.setHours(0, 0, 0, 0);
+            const moodIndex = moods.findIndex(m => m.label === item.emotion);
+            const barHeight = calculateBarHeight(moodIndex);
+
+            return {
+              date: moodDate,
+              dayName: moodDate.toLocaleDateString('en-US', { weekday: 'short' }),
+              mood: item.emotion,
+              moodIndex,
+              barHeight,
+              animatedHeight: new Animated.Value(barHeight),
+            };
+          });
+
           setMoodHistory(moodMap);
-          setMoodData(transformedData);
+          setMoodData(transformedData); // Current week only for graph
+          setAllMoodData(allMoods); // All mood data for calendar
 
           // Start animations after a short delay
           setTimeout(() => {
@@ -261,7 +281,7 @@ export default function MoodScreen() {
 
     useEffect(() => {
       const counts = moods.map((_, index) => {
-        return moodData.filter(item =>
+        return allMoodData.filter(item =>
           item.moodIndex === index &&
           item.date.getMonth() === currentMonth &&
           item.date.getFullYear() === currentYear
@@ -269,7 +289,7 @@ export default function MoodScreen() {
       });
 
       setMonthlyMoodCounts(counts);
-    }, [moodData, currentMonth, currentYear, moods, reloadKey]);
+    }, [allMoodData, currentMonth, currentYear, moods, reloadKey]);
 
     const calculateBarHeight = (moodIndex : number) => {
       if (moodIndex === null) {return 0;}
@@ -356,7 +376,7 @@ export default function MoodScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleMoodToday = async (Mood : string) => {
+    const handlePressMoodToday = async (Mood: string) => {
       try {
         const response = await axios.post(`${API}/moods/upsert`, {
           student_id: studentID,
@@ -370,6 +390,14 @@ export default function MoodScreen() {
         }
 
         console.log('Success:', response.data.message);
+
+        // Check if coins were added (meaning it's a new entry, not an update)
+        if (response.data.coinsAdded) {
+          setSuccessModal(true);
+        }
+
+        setModalVisible(false);
+        resetPage();
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
           console.warn('Failed:', error.response?.data?.message ?? error.message);
@@ -379,12 +407,6 @@ export default function MoodScreen() {
           console.error('Unknown error', error);
         }
       }
-    };
-
-    const handlePressMoodToday = (Mood : string) => {
-      handleMoodToday(Mood);
-      setModalVisible(false);
-      resetPage();
     };
 
     useEffect(() => {
@@ -506,37 +528,50 @@ export default function MoodScreen() {
                             <View key={index} style={styles.week}>
                               {week.map((day, i) => {
                                 const thisDate = new Date(day.year, day.month, day.day);
-                                const moodForDay = moodData.find(
+                                thisDate.setHours(0, 0, 0, 0);
+                                const todayCurrent = new Date();
+                                todayCurrent.setHours(0, 0, 0, 0);
+
+                                const moodForDay = allMoodData.find(
                                   (m) =>
                                     m.date.getFullYear() === thisDate.getFullYear() &&
                                     m.date.getMonth() === thisDate.getMonth() &&
                                     m.date.getDate() === thisDate.getDate()
                                 );
 
+                                // Only show mood if date has passed (not in future)
+                                const hasMood = moodForDay && thisDate <= todayCurrent;
+                                const isToday = day.isCurrentMonth &&
+                                  day.day === todayCalendar.getDate() &&
+                                  currentMonth === todayCalendar.getMonth() &&
+                                  currentYear === todayCalendar.getFullYear();
+
                                 return (
                                   <View key={i} style={styles.day}>
                                     <View
                                       style={[
                                         styles.dayBGSettings,
-                                        !moodForDay ? styles.dayBGNoEmoji :
-                                        day.isCurrentMonth ? styles.dayBGCurrent : styles.dayBGNotCurrent,
+                                        !hasMood ? styles.dayBGNoEmoji :
+                                        day.isCurrentMonth ?
+                                          (hasMood && moodForDay.moodIndex !== null ?
+                                            // eslint-disable-next-line react-native/no-inline-styles
+                                            { backgroundColor: '#317873' } :
+                                            styles.dayBGCurrent) :
+                                          styles.dayBGNotCurrent,
                                       ]}
                                     >
                                       <Text
                                         style={[
                                           styles.dayText,
                                           !day.isCurrentMonth && styles.otherMonthDayText,
-                                          day.isCurrentMonth &&
-                                            day.day === todayCalendar.getDate() &&
-                                            currentMonth === todayCalendar.getMonth() &&
-                                            currentYear === todayCalendar.getFullYear() &&
-                                            styles.todayText,
+                                          isToday && styles.todayText,
+                                          hasMood && !isToday && styles.dayTextWithMood,
                                         ]}
                                       >
                                         {day.day}
                                       </Text>
 
-                                      {moodForDay ? (
+                                      {hasMood ? (
                                         <Text style={styles.calendarEmoji}>
                                           {moodForDay.moodIndex !== null && moodForDay.moodIndex >= 0 && moodForDay.moodIndex < moods.length
                                             && moods[moodForDay.moodIndex].emoji}
@@ -584,11 +619,15 @@ export default function MoodScreen() {
                         </View>
                     </View>
                     <Text style={styles.MostDays}>
-                        Most days, this {todayCalendar.toLocaleString('default', { month: 'long' })} you felt {moods[monthlyMoodCounts.reduce(
-                              (maxIdx, currentValue, currentIndex, array) =>
-                                currentValue > array[maxIdx] ? currentIndex : maxIdx,
-                              0
-                            )].label}.</Text>
+                        {monthlyMoodCounts.some(count => count > 0) ?
+                          `Most days, this ${new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' })} you felt ${moods[monthlyMoodCounts.reduce(
+                            (maxIdx, currentValue, currentIndex, array) =>
+                              currentValue > array[maxIdx] ? currentIndex : maxIdx,
+                            0
+                          )].label}.` :
+                          `No moods recorded for ${new Date(currentYear, currentMonth).toLocaleString('default', { month: 'long' })} ${currentYear}.`
+                        }
+                    </Text>
                 </View>
             </ScrollView>
 
@@ -597,6 +636,32 @@ export default function MoodScreen() {
               handlePressMoodToday={handlePressMoodToday}
               onClose={() => setModalVisible(false)}
             />
+
+            <Modal visible={successModal} animationType="fade" transparent>
+              <View style={styles.overlay}>
+                <View style={styles.successModalContainer}>
+                  <View style={styles.successModalHeader}>
+                    <Text style={styles.successModalTitle}>Mood Logged Successfully</Text>
+                    <TouchableOpacity onPress={() => setSuccessModal(false)}>
+                      <Text style={styles.closeButton}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.successModalContent}>
+                    <Text style={styles.successModalText}>
+                      Great job checking in today!{'\n'}You've earned a token -- your pet is excited to use it!
+                    </Text>
+                  </View>
+                  <View style={styles.successModalActions}>
+                    <TouchableOpacity
+                      style={styles.successOkButton}
+                      onPress={() => setSuccessModal(false)}
+                    >
+                      <Text style={styles.successOkButtonText}>OK</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
         </View>
     );
 }
@@ -976,4 +1041,75 @@ const styles = StyleSheet.create({
       alignItems: 'center',
     },
     modalBG: { position: 'absolute', top: verticalScale(0), width: width, height: height },
+    dayTextWithMood: {
+      color: 'black',
+      fontFamily: 'Lora-Bold',
+    },
+    successModalContainer: {
+      width: '85%',
+      borderRadius: moderateScale(15),
+      shadowColor: '#000',
+      shadowOpacity: 0.3,
+      shadowOffset: { width: moderateScale(0), height: moderateScale(3) },
+      elevation: 5,
+      backgroundColor: 'white',
+    },
+    successModalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: '#fff7ae',
+      paddingHorizontal: scale(20),
+      paddingVertical: verticalScale(10),
+      borderTopLeftRadius: moderateScale(15),
+      borderTopRightRadius: moderateScale(15),
+    },
+    successModalTitle: {
+      fontSize: moderateScale(18),
+      color: '#333',
+      fontFamily: 'Poppins-Bold',
+    },
+    closeButton: {
+      fontSize: moderateScale(22),
+      color: '#333',
+      fontFamily: 'Poppins-Bold',
+    },
+    successModalContent: {
+      paddingHorizontal: scale(30),
+      paddingVertical: verticalScale(20),
+      alignItems: 'center',
+    },
+    successModalText: {
+      fontFamily: 'Lora-Regular',
+      color: '#4a4a4a',
+      textAlign: 'center',
+      fontSize: moderateScale(14),
+      lineHeight: moderateScale(22),
+    },
+    successModalActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: scale(20),
+      paddingBottom: verticalScale(15),
+    },
+    successOkButton: {
+      backgroundColor: '#fff7ae',
+      paddingVertical: verticalScale(10),
+      paddingHorizontal: scale(40),
+      borderRadius: moderateScale(10),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    successOkButtonText: {
+      color: 'white',
+      fontFamily: 'Poppins-ExtraBold',
+      fontSize: moderateScale(15),
+    },
+    overlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(49, 120, 115, 0.8)',
+    },
 });
