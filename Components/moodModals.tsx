@@ -12,7 +12,6 @@ import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const { width, height } = Dimensions.get('window');
-const dotAreaWidth = width - 160;
 
 const screens = [...Array(7).keys()]; // [0..6]
 
@@ -154,7 +153,7 @@ export default function InfiniteSwipeModal({ visible, handlePressMoodToday, onCl
             style={[
               {backgroundColor: screenList[currentPage].lightColor},
               styles.highlightDot,
-              { left: (dotAreaWidth / 7) * currentPage + (dotAreaWidth / 14) + 80 - 7 },
+              { left: scale(80) + ((width - scale(160)) / 7) * currentPage + ((width - scale(160)) / 14) - scale(7) },
             ]}
           />
         </View>
@@ -189,7 +188,7 @@ const styles = StyleSheet.create({
   },
   timelineContainer: {
     position: 'absolute',
-    bottom: verticalScale(180),
+    bottom: verticalScale(142.5),
     width,
     height: verticalScale(20),
     flexDirection: 'row',
@@ -212,7 +211,7 @@ const styles = StyleSheet.create({
   },
   horizontalBar: {
     position: 'absolute',
-    bottom: verticalScale(187.5),
+    bottom: verticalScale(150),
     width,
     height: verticalScale(5),
   },

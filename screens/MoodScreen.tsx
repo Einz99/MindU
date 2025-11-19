@@ -1065,7 +1065,7 @@ const styles = StyleSheet.create({
       borderTopRightRadius: moderateScale(15),
     },
     successModalTitle: {
-      fontSize: moderateScale(18),
+      fontSize: moderateScale(16),
       color: '#333',
       fontFamily: 'Poppins-Bold',
     },
@@ -1102,7 +1102,7 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
     },
     successOkButtonText: {
-      color: 'white',
+      color: 'gray',
       fontFamily: 'Poppins-ExtraBold',
       fontSize: moderateScale(15),
     },

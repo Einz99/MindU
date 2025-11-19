@@ -327,24 +327,33 @@ export default function BottomBarNavComponent() {
             right: scale(0),
             backgroundColor: '#b8e6c9',
             borderTopWidth: moderateScale(0),
-            height: verticalScale(50),
+            height: verticalScale(40),
             elevation: 0,
             shadowOpacity: 0,
-            paddingTop: verticalScale(10),
+            paddingTop: verticalScale(7.5),
             zIndex: 10,
           },
           animation: 'shift',
           // eslint-disable-next-line react/no-unstable-nested-components
           tabBarIcon: ({ focused }) => {
             const iconSource: Record<'Home' | 'Chatbot' | 'Wellness' | 'Resources' | 'Mood', any> = {
-              Home: require('../assets/images/apphome.png'),
+              Home: focused ? require('../assets/images/selapphome.png') : require('../assets/images/apphome.png'),
               Chatbot: require('../assets/images/appchatbot.png'),
-              Wellness: require('../assets/images/appwellnesstools.png'),
-              Resources: require('../assets/images/applibrary.png'),
-              Mood: require('../assets/images/appmoodtracker.png'),
+              Wellness: focused ?  require('../assets/images/selappwelltool.png') : require('../assets/images/appwellnesstools.png'),
+              Resources: focused ? require('../assets/images/selapplibrary.png') : require('../assets/images/applibrary.png'),
+              Mood: focused ?  require('../assets/images/selmoodtracker.png') : require('../assets/images/appmoodtracker.png'),
+            };
+
+            const labelText: Record<'Home' | 'Chatbot' | 'Wellness' | 'Resources' | 'Mood', string> = {
+              Home: 'Home',
+              Chatbot: 'Calmi',
+              Wellness: 'Tools',
+              Resources: 'Library',
+              Mood: 'Mood',
             };
 
             const iconName = iconSource[route.name as keyof typeof iconSource] || require('../assets/images/apphome.png');
+            const label = labelText[route.name as keyof typeof labelText] || '';
 
             if (route.name === 'Chatbot') {
               return (
@@ -360,14 +369,14 @@ export default function BottomBarNavComponent() {
                       <Image source={iconName} style={{ width: moderateScale(40), height: moderateScale(40) }} />
                     </View>
                   </View>
-                  {focused && <View style={styles.indicatorDot} />}
+                  <Text numberOfLines={1} style={[styles.tabLabel, {marginTop: verticalScale(-3)}, focused && styles.tabLabelFocused]}>{label}</Text>
                 </View>
               );
             } else {
               return (
                 <View style={styles.tabIconWrapper}>
-                  <Image source={iconName} style={{ width: moderateScale(40), height: moderateScale(40) }} />
-                  {focused && <View style={styles.indicatorDot} />}
+                  <Image source={iconName} style={{ width: moderateScale(32.5), height: moderateScale(32.5) }} />
+                  <Text numberOfLines={1} style={[styles.tabLabel, focused && styles.tabLabelFocused]}>{label}</Text>
                 </View>
               );
             }
@@ -408,7 +417,7 @@ export default function BottomBarNavComponent() {
 const styles = StyleSheet.create({
   centerIconContainer: {
     position: 'absolute',
-    bottom: verticalScale(0),
+    bottom: verticalScale(-5),
     height: verticalScale(60),
     width: scale(60),
     justifyContent: 'center',
@@ -432,18 +441,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+    flex: 1,
+    overflow: 'visible',
   },
-  indicatorDot: {
-    width: scale(6),
-    height: verticalScale(6),
-    borderRadius: moderateScale(3),
-    backgroundColor: '#317873',
-    position: 'absolute',
-    bottom: -6,
+  tabLabel: {
+    fontSize: moderateScale(10),
+    color: '#888',
+    fontFamily: 'Poppins-Regular',
+    marginTop: verticalScale(-8),
+    textAlign: 'center',
+    width: scale(60),
+  },
+  tabLabelFocused: {
+    color: '#317873',
+    fontFamily: 'Poppins-Bold',
   },
   stickyButton: {
     position: 'absolute',
-    bottom: verticalScale(60),
+    bottom: verticalScale(70),
     right: scale(20),
     zIndex: 20,
     backgroundColor: 'transparent',

@@ -353,6 +353,8 @@ const styles = StyleSheet.create({
     marginTop: verticalScale(5),
     fontSize: moderateScale(14),
     fontWeight: 'bold',
+    fontFamily: 'Lora-Regular',
+    color: 'black',
   },
   lockedText: {
     color: '#999',

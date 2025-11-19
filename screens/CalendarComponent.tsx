@@ -21,6 +21,7 @@ interface Backlog {
     created_at: string; // ISO string from MySQL DATETIME
     modified_at: string;
     completed_at?: string | null;
+    proposal?: string | null;
   }
 
 export default function CalendarComponent() {
@@ -117,20 +118,28 @@ export default function CalendarComponent() {
   }, [navigation]);
 
   const filteredBacklogs = backlogs.filter((backlog) => {
-    if (!backlog.sched_date ||
-        !selectedDay ||
-        backlog.status !== 'Scheduled')
-        { return false; }
+    // Early exit for missing required fields
+    if (!backlog.sched_date || !selectedDay || backlog.status !== 'Scheduled') {
+        return false;
+    }
 
+    // Date matching logic
     const date = new Date(backlog.sched_date);
     const dateMatches = (
-      date.getDate() === selectedDay.day &&
-      date.getMonth() === selectedDay.month &&
-      date.getFullYear() === selectedDay.year
+        date.getDate() === selectedDay.day &&
+        date.getMonth() === selectedDay.month &&
+        date.getFullYear() === selectedDay.year
     );
 
-    // Date must match AND (student_id doesn't exist OR equals userId)
-    return dateMatches && (!backlog.student_id || backlog.student_id === userId);
+    if (!dateMatches) {return false;}
+
+    // Event: has proposal but no student_id (show to everyone)
+    const isEvent = backlog.proposal && !backlog.student_id;
+
+    // Appointment: has student_id but no proposal (show only if it's the user's appointment)
+    const isUserAppointment = backlog.student_id === userId && !backlog.proposal;
+
+    return isEvent || isUserAppointment;
 });
 
   const months = [
@@ -222,31 +231,35 @@ export default function CalendarComponent() {
 
   const hasEvent = (day: number, month: number, year: number) => {
     return backlogs.some((backlog) => {
-      if (!backlog.sched_date || backlog.status !== 'Scheduled' || backlog.title !== 'Guidance Related Events') {
+      if (!backlog.sched_date || backlog.status !== 'Scheduled') {
         return false;
       }
       const sched = new Date(backlog.sched_date);
-      return (
+      const dateMatches = (
         sched.getDate() === day &&
         sched.getMonth() === month &&
-        sched.getFullYear() === year &&
-        (!backlog.student_id || backlog.student_id === userId)
+        sched.getFullYear() === year
       );
+
+      // Event: has proposal AND no student_id (public events)
+      return dateMatches && backlog.proposal && !backlog.student_id;
     });
   };
 
   const hasAppointment = (day: number, month: number, year: number) => {
     return backlogs.some((backlog) => {
-      if (!backlog.sched_date || backlog.status !== 'Scheduled' || backlog.title === 'Guidance Related Events') {
+      if (!backlog.sched_date || backlog.status !== 'Scheduled') {
         return false;
       }
       const sched = new Date(backlog.sched_date);
-      return (
+      const dateMatches = (
         sched.getDate() === day &&
         sched.getMonth() === month &&
-        sched.getFullYear() === year &&
-        (!backlog.student_id || backlog.student_id === userId)
+        sched.getFullYear() === year
       );
+
+      // Appointment: has student_id matching current user AND no proposal
+      return dateMatches && backlog.student_id === userId && !backlog.proposal;
     });
   };
 
@@ -371,8 +384,10 @@ export default function CalendarComponent() {
                                                     </Text>
                                                 </View>
                                                 <View style={styles.backlogContent}>
-                                                    {item.title === 'Guidance Related Events' && (
-                                                        <Text style={styles.eventTag}>Event {'\u25CF'}</Text>
+                                                    {item.title === 'Guidance Related Events' ? (
+                                                        <Text style={styles.appointTag}>Event {'\u25CF'}</Text>
+                                                    ) : (
+                                                        <Text style={styles.eventTag}>Appointment {'\u25CF'}</Text>
                                                     )}
                                                     <Text style={styles.backlogName}>{item.name}</Text>
                                                 </View>
@@ -576,10 +591,7 @@ const styles = StyleSheet.create({
     dotIndicator: {
         width: moderateScale(7),
         height: moderateScale(7),
-        borderRadius: moderateScale(3),
-        backgroundColor: '#ffb028', // or any color you want
-        position: 'absolute',
-        top: verticalScale(-2),
+        borderRadius: moderateScale(3.5),
       },
       backlogScroll: {
         height: verticalScale(125),
@@ -615,6 +627,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
       },
       eventTag: {
+        position: 'absolute',
+        top: -10,
+        right: 0,
+        color: '#ffb028',
+      },
+      appointTag: {
         position: 'absolute',
         top: -10,
         right: 0,

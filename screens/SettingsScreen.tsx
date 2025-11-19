@@ -545,7 +545,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.overlay}>
           <View style={styles.LogoutModal}>
-            <View style={[styles.LogoutHeader, styles.BGGreen]}>
+            <View style={[styles.LogoutHeader, styles.BGGreenOther]}>
               <Text style={styles.LogoutTitleStyled}>Change Profile</Text>
               <TouchableOpacity onPress={() => {setPictureChangeModal(false); setProfilePic(notConfirmPic); setPicChanged(false);}}>
                 <Ionicons name="close" size={22} color="#333" />
@@ -559,7 +559,7 @@ export default function SettingsScreen() {
                 <Text style={styles.backText}>BACK</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.sendBtn, styles.BGGreen]}
+                style={[styles.sendBtn, styles.BGGreenOther]}
                 onPress={handleProfileConfirm}
               >
                 <Text style={styles.LogoutButtonText}>Change Profile</Text>
@@ -578,7 +578,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.overlay}>
           <View style={styles.LogoutModal}>
-            <View style={[styles.LogoutHeader, styles.BGGreen]}>
+            <View style={[styles.LogoutHeader, styles.BGGreenOther]}>
               <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Change Email</Text>
               <TouchableOpacity onPress={() => {setEmailChange(false); setEmail(emailTemp);}}>
                 <Ionicons name="close" size={22} color="#333" />
@@ -589,8 +589,8 @@ export default function SettingsScreen() {
             </View>
             <View>
             <View style={[styles.fieldContainer, styles.paddingField]}>
-              <Text style={styles.fieldLabel}>Email</Text>
-              <View style={styles.inputContainer}>
+              <Text style={styles.fieldLabel2}>Email</Text>
+              <View style={styles.inputContainer2}>
                 <TextInput
                   style={[styles.input, !isEmailValid && styles.incorrect]}
                   value={email}
@@ -609,7 +609,7 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 // eslint-disable-next-line react-native/no-inline-styles
-                style={[styles.sendBtn, styles.BGGreen, { opacity: (email && isEmailValid && !sendingCode) ? 1 : 0.5 }]}
+                style={[styles.sendBtn, styles.BGGreenOther, { opacity: (email && isEmailValid && !sendingCode) ? 1 : 0.5 }]}
                 disabled={!email || !isEmailValid || sendingCode}
                 onPress={handleSendCode}
               >
@@ -634,7 +634,7 @@ export default function SettingsScreen() {
           >
           <View style={styles.overlay}>
             <View style={styles.LogoutModal}>
-              <View style={[styles.LogoutHeader, styles.BGGreen]}>
+              <View style={[styles.LogoutHeader, styles.BGGreenOther]}>
                 <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Enter Verification Code</Text>
                 <TouchableOpacity onPress={() => {setCodeModal(false); setEmail(emailTemp); setCode(['', '', '', '']);}}>
                   <Ionicons name="close" size={22} color="#333" />
@@ -664,7 +664,7 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   // eslint-disable-next-line react-native/no-inline-styles
-                  style={[styles.sendBtn, styles.BGGreen, { opacity: (code.join('').length === 4 && !verifyingCode) ? 1 : 0.5 }]}
+                  style={[styles.sendBtn, styles.BGGreenOther, { opacity: (code.join('').length === 4 && !verifyingCode) ? 1 : 0.5 }]}
                   disabled={code.join('').length !== 4 || verifyingCode}
                   onPress={handleSubmit}
                 >
@@ -688,7 +688,7 @@ export default function SettingsScreen() {
       >
         <View style={styles.overlay}>
           <View style={styles.LogoutModal}>
-            <View style={[styles.LogoutHeader, styles.BGGreen]}>
+            <View style={[styles.LogoutHeader, styles.BGGreenOther]}>
               <Text style={[styles.LogoutTitleStyled, styles.blackText]}>Change Password</Text>
               <TouchableOpacity onPress={() => {setPasswordChange(false); setTempPassword(''); setConfirmPassword(''); setOldPass(''); setPasswordError(false);}}>
                 <Ionicons name="close" size={22} color="#333" />
@@ -699,8 +699,8 @@ export default function SettingsScreen() {
             </View>
             <View>
               <View style={[styles.fieldContainer, styles.paddingField]}>
-                <Text style={styles.fieldLabel}>Old Password</Text>
-                <View style={styles.inputContainer}>
+                <Text style={styles.fieldLabel2}>Old Password</Text>
+                <View style={styles.inputContainer2}>
                   <TextInput
                     style={styles.input}
                     value={oldPass}
@@ -716,8 +716,8 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <View style={[styles.fieldContainer, styles.paddingField]}>
-                <Text style={styles.fieldLabel}>New Password</Text>
-                <View style={styles.inputContainer}>
+                <Text style={styles.fieldLabel2}>New Password</Text>
+                <View style={styles.inputContainer2}>
                   <TextInput
                     style={[styles.input]}
                     value={tempPassword}
@@ -733,8 +733,8 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <View style={[styles.fieldContainer, styles.paddingField]}>
-                <Text style={styles.fieldLabel}>Confirm New Password</Text>
-                <View style={styles.inputContainer}>
+                <Text style={styles.fieldLabel2}>Confirm New Password</Text>
+                <View style={styles.inputContainer2}>
                   <TextInput
                     style={[styles.input]}
                     value={confirmPassword}
@@ -760,8 +760,8 @@ export default function SettingsScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 // eslint-disable-next-line react-native/no-inline-styles
-                style={[styles.sendBtn, styles.BGGreen, { opacity: (oldPass && tempPassword && confirmPassword && !changingPassword) ? 1 : 0.5 }]}
-                disabled={!oldPass || !tempPassword || !confirmPassword || changingPassword}
+                style={[styles.sendBtn, styles.BGGreenOther, { opacity: (oldPass && tempPassword && confirmPassword && !changingPassword && !passwordError) ? 1 : 0.6 }]}
+                disabled={!oldPass || !tempPassword || !confirmPassword || changingPassword || passwordError}
                 onPress={handlePasswordConfirm}
               >
                 {/* Show loading spinner while changing password */}
@@ -848,9 +848,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: scale(10),
     backgroundColor: 'white',
   },
+  fieldLabel2: {
+    color: '#317873',
+    fontFamily: 'Poppins-SemiBold',
+    fontSize: moderateScale(12),
+    marginBottom: verticalScale(3),
+    position: 'absolute',
+    top: verticalScale(-12),
+    left: scale(15),
+    zIndex: 20,
+    borderRadius: moderateScale(20),
+    borderColor: '#10b981',
+    borderWidth: moderateScale(2),
+    paddingHorizontal: scale(10),
+    backgroundColor: 'white',
+  },
   inputContainer: {
     borderRadius: moderateScale(10),
     borderColor: '#b7e3cc',
+    borderWidth: moderateScale(2),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: scale(10),
+    backgroundColor: 'white',
+    position: 'relative',
+  },
+  inputContainer2: {
+    borderRadius: moderateScale(10),
+    borderColor: '#10b981',
     borderWidth: moderateScale(2),
     flexDirection: 'row',
     alignItems: 'center',
@@ -920,6 +945,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(15),
   },
   BGGreen: {backgroundColor: '#b7e3cc'},
+  BGGreenOther: {backgroundColor: '#10b981'},
   blackText: {color: 'black'},
   paddingField: {paddingHorizontal: scale(20)},
   incorrect: {color: 'red'},
